@@ -8,7 +8,7 @@ namespace TelImenikWebScraper
     {
         static void Main(string[] args)
         {
-            cScraperImenik_HR s = new cScraperImenik_HR(ConfigurationManager.AppSettings["connectionString"].ToString(), 1, "http://www.imenik.hr/imenik/trazi/1/", 3000);
+            cScraperImenik_HR s = new cScraperImenik_HR(ConfigurationManager.AppSettings["connectionString"].ToString(), 1, "http://www.imenik.hr/imenik", 3000);
             s.Start();
             Console.ReadLine();
         }
