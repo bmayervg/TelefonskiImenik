@@ -3,20 +3,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Configuration;
 
 namespace TelefonskiImenik
 {
     static class Program
     {
+        public static string _connectionString;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            
+            _connectionString = ConfigurationManager.AppSettings["connectionString"];
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                MessageBox.Show("connectionString NOT INITIALIZED -> app.config!");
+                Application.Exit();
+            }
+            else
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new frmMain());
+            }
         }
+
     }
 }
