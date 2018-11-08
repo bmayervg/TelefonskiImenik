@@ -12,6 +12,7 @@ namespace TelImenikWebScraper.Classess
 {
     public class cScraperImenik_HR
     {
+        private int _id_WebScraperSession = -1;
         private int _timeBetweenHTTPRequests_MS = 2000;
         private string _link = "";
         private string _connectionString;
@@ -21,9 +22,154 @@ namespace TelImenikWebScraper.Classess
         private int _currentRow = -1;
         private int _totalRows = 0;
         private int _threadsRunningCount = 0;
-        private int _brojacGresaka = 0;
-        private bool _isSnimiLog = true;
 
+        #region SESSION_START_FINISH
+
+        private void startSession()
+        {
+            if (!string.IsNullOrEmpty(_connectionString))
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    try
+                    {
+                        conn.Open();
+                        SqlCommand cmd = new SqlCommand("spWebScraperSession_StartSession", conn);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@id_WebScraperType", 1);
+                        cmd.Parameters.AddWithValue("@NumberOfThreadsUsed", _numberOfThreads);
+                        SqlParameter p = new SqlParameter("@id_WebScraperSession", SqlDbType.Int);
+                        p.Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add(p);
+                        cmd.ExecuteNonQuery();
+                        this._id_WebScraperSession = Convert.ToInt32(p.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(exceptionToString(ex));
+                    }
+                    finally
+                    {
+                        if (conn.State == ConnectionState.Open)
+                        {
+                            conn.Close();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("IMENIKHR --> _connectionString NOT INITIALIZED!");
+            }
+        }
+
+        private void finishSession()
+        {
+            if (!string.IsNullOrEmpty(_connectionString))
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    try
+                    {
+                        conn.Open();
+                        SqlCommand cmd = new SqlCommand("spWebScraperSession_FinishSession", conn);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                        cmd.Parameters.AddWithValue("@ProcessedRecords", this._totalRows);
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(exceptionToString(ex));
+                    }
+                    finally
+                    {
+                        if (conn.State == ConnectionState.Open)
+                        {
+                            conn.Close();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("IMENIKHR --> _connectionString NOT INITIALIZED!");
+            }
+        }
+
+        #endregion
+
+        #region SESSION_LOG
+
+        private string exceptionToString(Exception exInsertLog)
+        {
+            string exDescription = "";
+            try
+            {
+                if (exInsertLog != null)
+                {
+                    exDescription += Environment.NewLine + "-------------------------------------------------------------------";
+                    exDescription += Environment.NewLine + "-------------------------------------------------------------------";
+                    exDescription += Environment.NewLine + "Exception: " + exInsertLog.Message.ToString();
+                    exDescription += Environment.NewLine + "Exception stack trace: " + exInsertLog.StackTrace.ToString();
+                    exDescription += Environment.NewLine + "Exception source:" + exInsertLog.Source.ToString();
+                    exDescription += Environment.NewLine + "Exception target site" + exInsertLog.TargetSite.ToString();
+                    if (exInsertLog.InnerException != null)
+                    {
+                        exDescription += Environment.NewLine + "Inner exception: " + exInsertLog.InnerException.Message.ToString();
+                        exDescription += (!string.IsNullOrEmpty(exInsertLog.InnerException.StackTrace) ? Environment.NewLine + "Inner exception stack trace: " + exInsertLog.InnerException.StackTrace.ToString() : "");
+                        exDescription += (!string.IsNullOrEmpty(exInsertLog.InnerException.Source) ? Environment.NewLine + "Inner exception source: " + exInsertLog.InnerException.Source.ToString() : "");
+                        exDescription += (!string.IsNullOrEmpty(exInsertLog.InnerException.TargetSite.ToString()) ? Environment.NewLine + "Inner exception target site: " + exInsertLog.InnerException.TargetSite.ToString().ToString() : "");
+                        exDescription += Environment.NewLine;
+                    }
+                    exDescription += Environment.NewLine + "-------------------------------------------------------------------";
+                    exDescription += Environment.NewLine + "-------------------------------------------------------------------";
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("|");
+                Console.WriteLine("ERROR IN exceptionToString(Exception ex)");
+                Console.WriteLine(e.Message.ToString());
+                Console.WriteLine("|");
+            }
+            return exDescription;
+        }
+
+        private void saveSessionLog(Exception ex)
+        {
+            string exceptionDesc = exceptionToString(ex);
+            saveSessionLog(exceptionDesc, true);
+        }
+       
+        private void saveSessionLog(string logText, bool isException)
+        {
+            if (!string.IsNullOrEmpty(_connectionString))
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    try
+                    {
+                        conn.Open();
+                        SqlCommand cmd = new SqlCommand("spWebScraperSessionLog_SaveLog", conn);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                        cmd.Parameters.AddWithValue("@logText",logText);
+                        cmd.Parameters.AddWithValue("@isException", isException);
+                        cmd.ExecuteNonQuery();
+                        conn.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("|");
+                        Console.WriteLine("ERROR WHILE TRYING saveSessionLog");
+                        Console.WriteLine("|");
+                    }
+                }
+            }
+        }
+
+        #endregion
 
         public cScraperImenik_HR(string connectionString, int numberOfThreads, string link, int timeBetweenHTTPRequests_MS)
         {
@@ -48,14 +194,12 @@ namespace TelImenikWebScraper.Classess
                 }
                 catch (Exception ex)
                 {
-                    
+                    //TODO LOGGING
                 }
             }
             this._currentRow = -1;
             this._totalRows = 0;
             this._threadsRunningCount = 0;
-            this._brojacGresaka = 0;
-            this._isSnimiLog = true;
     }
 
         public void Start()
@@ -67,13 +211,13 @@ namespace TelImenikWebScraper.Classess
                 {
                     try
                     {
-                        SqlCommand cmd = new SqlCommand("spUlica_GetNeprocesirane_Select", conn);
+                        SqlCommand  cmd = new SqlCommand("spUlica_GetNeprocesirane_Select", conn);
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
                         da.Fill(tblNeprocesiraneUlice);
                     }
                     catch (Exception ex)
                     {
-
+                        saveSessionLog(ex);
                     }
                 }
                 if (tblNeprocesiraneUlice != null && tblNeprocesiraneUlice.Rows.Count != 0)
@@ -81,15 +225,17 @@ namespace TelImenikWebScraper.Classess
                     this._tblNeprocesiraneUlice = tblNeprocesiraneUlice;
                     this._totalRows = _tblNeprocesiraneUlice.Rows.Count;
                     runScraper();
+
                 }
                 else
                 {
+                    saveSessionLog("IMENIK HR --> tblNeprocesiraneUlice EMPTY!", false);
                     Console.WriteLine("tblNeprocesiraneUlice ROW COUNT == 0");
                 }
             }
             else
             {
-
+                saveSessionLog("IMENIK HR --> _link EMPTY STRING!", false);
             }
         }
 
@@ -97,7 +243,7 @@ namespace TelImenikWebScraper.Classess
         {
             if (id_Ulica != -1 && !string.IsNullOrEmpty(linkOsobaTelBroj) && !string.IsNullOrEmpty(imePrezime))
             {
-                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(this._link + System.Web.HttpUtility.UrlEncode(linkOsobaTelBroj.Replace("/imenik/", "")));
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(this._link.Replace("/imenik", "" ) + System.Web.HttpUtility.UrlEncode(linkOsobaTelBroj).Replace("%2f", "/"));
                 request.Method = "GET";
                 request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
                 CookieContainer cc = new CookieContainer();
@@ -126,46 +272,213 @@ namespace TelImenikWebScraper.Classess
                 string responseFromServer = reader.ReadToEnd();
                 reader.Close();
                 reader.Dispose();
-
                 dataStream.Close();
                 dataStream.Dispose();
-
                 response.Close();
                 response.Dispose();
                 if (!string.IsNullOrEmpty(responseFromServer))
                 {
                     var doc = new HtmlAgilityPack.HtmlDocument();
                     doc.LoadHtml(responseFromServer);
-                    
+                    if (doc != null)
+                    {
+                        int id_Osoba = -1;
+                        string osobaIme = "";
+                        string osobaPrezime = "";
+                        string osobaNaselje = "";
+                        string osobaPostanskiBroj = "";
+                        string osobaUlica = "";
+                        string osobaKucniBroj = "";
+                        string[] oip = imePrezime.Split(' ');
+                        if (oip != null && oip.Length == 2)
+                        {
+                            osobaIme = oip[0].ToString();
+                            osobaPrezime = oip[1].ToString();
+                        }
+                        HtmlAgilityPack.HtmlNodeCollection htmlNodesOsobaAdresa = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa_detalj ')]");
+                        if (htmlNodesOsobaAdresa != null && htmlNodesOsobaAdresa.Count > 0)
+                        {
+                            string[] osobaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(' ');
+                            if (osobaPodaci != null && osobaPodaci.Length != 0)
+                            {
+                                try
+                                {
+                                    osobaPostanskiBroj = osobaPodaci[0].ToString().Replace(",", "");
+                                    osobaNaselje = osobaPodaci[1].ToString().Replace(",", "");
+                                    osobaUlica = osobaPodaci[2].ToString().Replace(",", ""); 
+                                    if (osobaPodaci.Length == 4)
+                                    {
+                                        osobaKucniBroj = osobaPodaci[3].ToString();
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    saveSessionLog(ex);
+                                }
+                            }
+                            else
+                            {
+                                saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) -->  string[] osobaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(' ') IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                            }
+                        }
+                        else
+                        {
+                            saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> htmlNodesOsobaAdresa IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                        }
+
+                        HtmlAgilityPack.HtmlNodeCollection htmlNodesTelBrojevi = doc.DocumentNode.SelectNodes("//td[contains(concat(' ', @class, ' '), ' data_tel ')]");
+                        if (htmlNodesTelBrojevi != null && htmlNodesTelBrojevi.Count != 0)
+                        {
+                            using (SqlConnection conn = new SqlConnection(_connectionString))
+                            {
+                                try
+                                {
+                                    conn.Open();
+                                    SqlCommand cmd = new SqlCommand("spOsoba_SnimiOsobu_Insert", conn);
+                                    cmd.CommandType = CommandType.StoredProcedure;
+                                    cmd.Parameters.AddWithValue("@osobaIme", osobaIme);
+                                    cmd.Parameters.AddWithValue("@osobaPrezime", osobaPrezime);
+                                    cmd.Parameters.AddWithValue("@osobaNaselje", osobaNaselje);
+                                    cmd.Parameters.AddWithValue("@osobaPostanskiBroj", osobaPostanskiBroj);
+                                    cmd.Parameters.AddWithValue("@osobaUlica", osobaUlica);
+                                    cmd.Parameters.AddWithValue("@osobaKucniBroj", osobaKucniBroj);
+                                    cmd.Parameters.AddWithValue("@id_Ulica", id_Ulica);
+                                    cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                                    SqlParameter p = new SqlParameter("@id_Osoba", SqlDbType.Int);
+                                    p.Direction = ParameterDirection.Output;
+                                    cmd.Parameters.Add(p);
+                                    cmd.ExecuteNonQuery();
+                                    id_Osoba = Convert.ToInt32(p.Value);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine(exceptionToString(ex));
+                                }
+                                finally
+                                {
+                                    if (conn.State == ConnectionState.Open)
+                                    {
+                                        conn.Close();
+                                    }
+                                }
+                            }
+
+                            if (id_Osoba != -1)
+                            {
+                                for (int i = 0; i < htmlNodesTelBrojevi.Count; i++)
+                                {
+                                    using (SqlConnection conn = new SqlConnection(_connectionString))
+                                    {
+                                        try
+                                        {
+                                            conn.Open();
+                                            SqlCommand cmd = new SqlCommand("spTelefon_SnimiTelefon_Insert", conn);
+                                            cmd.CommandType = CommandType.StoredProcedure;
+                                            cmd.Parameters.AddWithValue("@id_Osoba", id_Osoba);
+                                            cmd.Parameters.AddWithValue("@PredBroj", htmlNodesTelBrojevi[i].InnerText.Trim().Substring(0, htmlNodesTelBrojevi[i].InnerText.Trim().LastIndexOf(')')).Replace("(", ""));
+                                            cmd.Parameters.AddWithValue("@Broj", htmlNodesTelBrojevi[i].InnerText.Trim().Substring(htmlNodesTelBrojevi[i].InnerText.Trim().LastIndexOf(')')).Replace(")", "").Trim().Replace(" ", ""));
+                                            cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                                            cmd.ExecuteNonQuery();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(exceptionToString(ex));
+                                        }
+                                        finally
+                                        {
+                                            if (conn.State == ConnectionState.Open)
+                                            {
+                                                conn.Close();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> id_Osoba == -1!!!! --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                            }
+                        }
+                        else
+                        {
+                            saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> htmlNodesTelBrojevi IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                        }
+                    }
+                    else
+                    {
+                        saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> responseFromServer IS NULL --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                    }
+                }
+                else
+                {
+                    saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> doc.LoadHtml(responseFromServer) IS NULL --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
                 }
             }
         }
 
-        private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link)
+        private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link, CookieCollection cookies)
         {
-            Tuple<CookieCollection, HtmlNodeCollection> t;
-            HtmlNodeCollection nodes = new HtmlNodeCollection(null);
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
-            request.Method = "GET";
-            request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
-            CookieContainer cc = new CookieContainer();
-            request.CookieContainer = cc;
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            
-            Stream dataStream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(dataStream);
-            string responseFromServer = reader.ReadToEnd();
-            reader.Close();
-            dataStream.Close();
-            response.Close();
-
-            if (!string.IsNullOrEmpty(responseFromServer))
+            Tuple<CookieCollection, HtmlNodeCollection> t = null;
+            try
             {
-                var doc = new HtmlAgilityPack.HtmlDocument();
-                doc.LoadHtml(responseFromServer);
-                nodes = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa ')]");
+
+                HtmlNodeCollection nodes = new HtmlNodeCollection(null);
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
+                request.Method = "GET";
+                request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+                CookieContainer cc = new CookieContainer();
+                request.CookieContainer = cc;
+                if (cookies != null && cookies.Count != 0)
+                {
+                    for (int ck = 0; ck < cookies.Count; ck++)
+                    {
+                        Cookie c = new Cookie();
+                        c.Secure = cookies[ck].Secure;
+                        c.Port = cookies[ck].Port;
+                        c.Path = cookies[ck].Path;
+                        c.Name = cookies[ck].Name;
+                        c.HttpOnly = cookies[ck].HttpOnly;
+                        c.Expires = cookies[ck].Expires;
+                        c.Domain = cookies[ck].Domain;
+                        c.Value = cookies[ck].Value;
+                        c.Discard = cookies[ck].Discard;
+                        c.CommentUri = cookies[ck].CommentUri;
+                        c.Comment = cookies[ck].Comment;
+                        c.Expired = cookies[ck].Expired;
+                        c.Version = cookies[ck].Version;
+                        cc.Add(c);
+                    }
+                }
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                Stream dataStream = response.GetResponseStream();
+                StreamReader reader = new StreamReader(dataStream);
+                string responseFromServer = reader.ReadToEnd();
+
+                if (!string.IsNullOrEmpty(responseFromServer))
+                {
+                    var doc = new HtmlAgilityPack.HtmlDocument();
+                    doc.LoadHtml(responseFromServer);
+                    nodes = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa ')]");
+                    t = new Tuple<CookieCollection, HtmlNodeCollection>(response.Cookies, nodes);
+                }
+                else
+                {
+                    saveSessionLog("IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer empty --> link" + link, false);
+                }
+                response.Close();
+                response.Dispose();
+                reader.Close();
+                reader.Dispose();
+                dataStream.Close();
+                dataStream.Dispose();
             }
-            t = new Tuple<CookieCollection, HtmlNodeCollection>(response.Cookies, nodes);
+            catch (Exception ex)
+            {
+                if (ex.Message.ToString() != "The remote server returned an error: (500) Internal Server Error.")
+                {
+                    saveSessionLog(ex);
+                }
+            }
             return t;
         }
 
@@ -191,29 +504,67 @@ namespace TelImenikWebScraper.Classess
                     }
                 }
                 string log = (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name ) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1" ) + " --> id_Ulica = " + id_Ulica.ToString() + ", mjesto: " + mjestoNaziv + ", ulica: " + ulicaNaziv;
-                Console.WriteLine(log);
                 if (id_Ulica != -1)
                 {
                     int currentResultsPage = 1;
                     
                     if (!string.IsNullOrEmpty(this._link))
                     {
-                        Tuple<CookieCollection, HtmlNodeCollection> t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + ulicaNaziv + "%20mjesto:" + mjestoNaziv + ".html");
-                        HtmlNodeCollection nodes = (HtmlNodeCollection)t.Item2;
-                        while( nodes != null && nodes.Count != 0 )
+                        Tuple<CookieCollection, HtmlNodeCollection> t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null);
+                        if (t != null)
                         {
-                            for (int i = 0; i < nodes.Count; i++)
+                            HtmlNodeCollection nodes = (HtmlNodeCollection)t.Item2;
+                            
+                            while (nodes != null && nodes.Count != 0)
                             {
-                                SnimiOsobu(id_Ulica, nodes[0].ChildNodes[1].Attributes[0].Value.ToString(), nodes[0].ChildNodes[1].Attributes[1].Value.ToString(), (CookieCollection)t.Item1);
+                                for (int i = 0; i < nodes.Count; i++)
+                                {
+                                    SnimiOsobu(id_Ulica, nodes[i].ChildNodes[1].Attributes[0].Value.ToString(), nodes[i].ChildNodes[1].Attributes[1].Value.ToString(), (CookieCollection)t.Item1);
+                                }
+                                currentResultsPage++;
+                                t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", (CookieCollection)t.Item1 );
+                                if (t != null && t.Item2 != null)
+                                {
+                                    nodes = (HtmlNodeCollection)t.Item2;
+                                }
+                                else
+                                {
+                                    nodes = null;
+                                }
                             }
-                            currentResultsPage++;
-                            t = GetUsersForUlicaMjesto(this._link + "/" + currentResultsPage.ToString() + "/" + "ulica:" + ulicaNaziv + "%20mjesto:" + mjestoNaziv + ".html");
-                            nodes = (HtmlNodeCollection)t.Item2;
+                        }
+                        else
+                        {
+                            saveSessionLog("IMENIKHR -->  Tuple<CookieCollection, HtmlNodeCollection> t = NULL -- > LINK -->" + this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + ulicaNaziv + "%20mjesto:" + mjestoNaziv + ".html --> log: " + log, false);
                         }
                     }
                     else
                     {
+                        saveSessionLog("IMENIKHR --> id_Ulica == -1 -->" + log, false);
+                    }
 
+                    using (SqlConnection conn = new SqlConnection(_connectionString))
+                    {
+                        try
+                        {
+                            conn.Open();
+                            SqlCommand cmd = new SqlCommand("spUlica_SetProcesirano_Update", conn);
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@id_Ulica", id_Ulica);
+                            cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                            cmd.ExecuteNonQuery();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(exceptionToString(ex));
+                        }
+                        finally
+                        {
+                            if (conn.State == ConnectionState.Open)
+                            {
+                                conn.Close();
+                            }
+                        }
                     }
                 }
                 System.Threading.Thread.Sleep(_timeBetweenHTTPRequests_MS);
@@ -228,6 +579,7 @@ namespace TelImenikWebScraper.Classess
 
         private void runScraper()
         {
+            startSession();
             if (this._numberOfThreads > 1)
             {
                 for (int i = 0; i < this._numberOfThreads; i++)
@@ -248,10 +600,13 @@ namespace TelImenikWebScraper.Classess
             Console.Write("|");
             while (_currentRow < _totalRows - 1 || _threadsRunningCount > 0)
             {
-                while (_currentRow * 100 / _currentRow > nextPercentage)
+                if (_currentRow != 0)
                 {
-                    Console.Write(".");
-                    nextPercentage += 5;
+                    while (_currentRow * 100 / _currentRow > nextPercentage)
+                    {
+                        Console.Write(".");
+                        nextPercentage += 5;
+                    }
                 }
                 Thread.Sleep(1000);
             }
@@ -261,6 +616,7 @@ namespace TelImenikWebScraper.Classess
                 nextPercentage += 5;
             }
             Console.WriteLine("|");
+            finishSession();
         }
 
     }

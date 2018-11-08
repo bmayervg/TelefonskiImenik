@@ -43,13 +43,21 @@ namespace TelefonskiImenik
 
                 var doc = new HtmlAgilityPack.HtmlDocument();
                 //doc.Load(@"‪C:\Users\Bruno Mayer\Desktop\Test.html");
-                doc.Load("Greska.html");
+                //doc.Load("Greska.html");
+                //doc.Load("TelefonskiBroj.html");
+                doc.Load("TelBroj2.html");
+
+                HtmlAgilityPack.HtmlNodeCollection htmlNodes = doc.DocumentNode.SelectNodes("//td[contains(concat(' ', @class, ' '), ' data_tel ')]");
+                for (int i = 0; i < htmlNodes.Count; i++)
+                {
+                    MessageBox.Show(htmlNodes[i].InnerText.Trim());
+                }
 
                 //HtmlAgilityPack.HtmlNodeCollection htmlNodes = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa ')]");
-                               //var web = new HtmlWeb();
+                //var web = new HtmlWeb();
                 //var doc = web.Load("https://www.hakom.hr/default.aspx?id=8391");
                 //var hiddenValue = doc.GetElementbyId("frm_nezovi").SelectSingleNode(".//input[@type='hidden']").Attributes["value"].Value;
-                
+
                 ////var value = docroot.SelectSingleNode("//input[@type='hidden' and @name='foo']")
                 ////.Attributes["value"].Value;
                 ////foreach (HtmlNode node in doc.GetElementbyId("frm_nezovi").SelectNodes(".//input"))

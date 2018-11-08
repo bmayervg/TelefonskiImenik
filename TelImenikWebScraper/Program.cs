@@ -8,9 +8,10 @@ namespace TelImenikWebScraper
     {
         static void Main(string[] args)
         {
-            cScraperImenik_HR s = new cScraperImenik_HR(ConfigurationManager.AppSettings["connectionString"].ToString(), 1, "http://www.imenik.hr/imenik", 3000);
+
+            cScraperImenik_HR s = new cScraperImenik_HR(ConfigurationManager.AppSettings["connectionString"].ToString(), Convert.ToInt32(ConfigurationManager.AppSettings["imenikHRWSNumberOfThreads"]), ConfigurationManager.AppSettings["imenikHRLink"].ToString(), Convert.ToInt32(ConfigurationManager.AppSettings["imenikHRWSleepTimeBetweenThreads"]));
             s.Start();
-            Console.ReadLine();
+            
         }
     }
 }
