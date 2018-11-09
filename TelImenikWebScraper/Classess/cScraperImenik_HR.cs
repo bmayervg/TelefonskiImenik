@@ -6,6 +6,7 @@ using System.Net;
 using System.IO;
 using HtmlAgilityPack;
 using System.Collections.Generic;
+using System.Linq;
 
 
 namespace TelImenikWebScraper.Classess
@@ -239,13 +240,201 @@ namespace TelImenikWebScraper.Classess
             }
         }
 
-        private void SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies )
+        private void snimiFirmu(int id_Ulica, string nazivFirma, string linkFirmaTelBroj, CookieCollection cookies, string proxyIP, int proxyPort, string userAgent )
+        {
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(System.Web.HttpUtility.UrlEncode(linkFirmaTelBroj).Replace("%2f", "/").Replace("%3a", ":"));
+            request.Method = "GET";
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+            }
+            else
+            {
+                request.UserAgent = userAgent;
+            }
+
+            if (!string.IsNullOrEmpty(proxyIP) && proxyPort > 0)
+            {
+                WebProxy wp = new WebProxy(proxyIP, proxyPort);
+                wp.BypassProxyOnLocal = false;
+                request.Proxy = wp;
+            }
+            CookieContainer cc = new CookieContainer();
+            request.CookieContainer = cc;
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            Stream dataStream = response.GetResponseStream();
+            StreamReader reader = new StreamReader(dataStream);
+            string responseFromServer = reader.ReadToEnd();
+            reader.Close();
+            reader.Dispose();
+            dataStream.Close();
+            dataStream.Dispose();
+            response.Close();
+            response.Dispose();
+            if (!string.IsNullOrEmpty(responseFromServer))
+            {
+                var doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(responseFromServer);
+                if (doc != null)
+                {
+                    int id_Firma = -1;
+                    string firmaNaziv = nazivFirma;
+                    string firmaNaselje = "";
+                    string firmaPostanskiBroj = "";
+                    string firmaUlica = "";
+                    string firmaKucniBroj = "";
+                    string firmaPunaAdresa = "";
+                  
+                    HtmlAgilityPack.HtmlNodeCollection htmlNodesFirmaAdresa = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa_detalj ')]");
+                    if (htmlNodesFirmaAdresa != null && htmlNodesFirmaAdresa.Count > 0)
+                    {
+                        string[] firmaPodaci = htmlNodesFirmaAdresa[0].InnerText.Trim().Split(' ');
+                        if (firmaPodaci != null && firmaPodaci.Length != 0)
+                        {
+                            try
+                            {
+                                firmaPunaAdresa = htmlNodesFirmaAdresa[0].InnerText.Trim();
+                                firmaPostanskiBroj = firmaPodaci[0].ToString().Replace(",", "");
+                                firmaNaselje = firmaPodaci[1].ToString().Replace(",", "");
+                                
+                                string zadnjiPodatak = firmaPodaci[firmaPodaci.Length - 1].ToString();
+
+                                if (zadnjiPodatak.ToUpper() == "BB" || zadnjiPodatak.Any(c => char.IsDigit(c)))
+                                {
+                                    firmaKucniBroj = zadnjiPodatak;
+                                }
+                                for(int i = 2; i< firmaPodaci.Length-1; i++)
+                                {
+                                    firmaUlica += firmaPodaci[i].ToString() + " ";
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                saveSessionLog(ex);
+                            }
+                        }
+                        else
+                        {
+                            saveSessionLog("IMENIK HR --> snimiFirmusnimiFirmu(int id_Ulica, string nazivFirma, string linkFirmaTelBroj, CookieCollection cookies) -->  string[] firmaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(' ') IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", nazivFirma=" + nazivFirma + "linkFirmaTelBroj=" + linkFirmaTelBroj, false);
+                        }
+                    }
+                    else
+                    {
+                        saveSessionLog("IMENIK HR -->snimiFirmu(int id_Ulica, string nazivFirma, string linkFirmaTelBroj, CookieCollection cookies) --> htmlNodesFirmaAdresa IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", nazivFirma=" + nazivFirma + "linkFirmaTelBroj=" + linkFirmaTelBroj, false);
+                    }
+
+                    HtmlAgilityPack.HtmlNodeCollection htmlNodesTelBrojevi = doc.DocumentNode.SelectNodes("//td[contains(concat(' ', @class, ' '), ' data_tel ')]");
+                    if (htmlNodesTelBrojevi != null && htmlNodesTelBrojevi.Count != 0)
+                    {
+                        using (SqlConnection conn = new SqlConnection(_connectionString))
+                        {
+                            try
+                            {
+                                conn.Open();
+                                SqlCommand cmd = new SqlCommand("spFirma_SnimiFirmu_Insert", conn);
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@firmaNaziv", firmaNaziv);
+                                cmd.Parameters.AddWithValue("@firmaNaselje", firmaNaselje);
+                                cmd.Parameters.AddWithValue("@firmaPostanskiBroj", firmaPostanskiBroj);
+                                cmd.Parameters.AddWithValue("@firmaUlica", firmaUlica);
+                                cmd.Parameters.AddWithValue("@firmaKucniBroj", firmaKucniBroj);
+                                cmd.Parameters.AddWithValue("@firmaPunaAdresa", firmaPunaAdresa);
+                                cmd.Parameters.AddWithValue("@id_Ulica", id_Ulica);
+                                cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                                SqlParameter p = new SqlParameter("@id_Firma", SqlDbType.Int);
+                                p.Direction = ParameterDirection.Output;
+                                cmd.Parameters.Add(p);
+                                cmd.ExecuteNonQuery();
+                                id_Firma = Convert.ToInt32(p.Value);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(exceptionToString(ex));
+                            }
+                            finally
+                            {
+                                if (conn.State == ConnectionState.Open)
+                                {
+                                    conn.Close();
+                                }
+                            }
+                        }
+
+                        if (id_Firma != -1)
+                        {
+                            for (int i = 0; i < htmlNodesTelBrojevi.Count; i++)
+                            {
+                                using (SqlConnection conn = new SqlConnection(_connectionString))
+                                {
+                                    try
+                                    {
+                                        conn.Open();
+                                        SqlCommand cmd = new SqlCommand("spTelefon_SnimiTelefon_Insert", conn);
+                                        cmd.CommandType = CommandType.StoredProcedure;
+                                        cmd.Parameters.AddWithValue("@id_Firma", id_Firma);
+                                        cmd.Parameters.AddWithValue("@PredBroj", htmlNodesTelBrojevi[i].InnerText.Trim().Substring(0, htmlNodesTelBrojevi[i].InnerText.Trim().LastIndexOf(')')).Replace("(", ""));
+                                        cmd.Parameters.AddWithValue("@Broj", htmlNodesTelBrojevi[i].InnerText.Trim().Substring(htmlNodesTelBrojevi[i].InnerText.Trim().LastIndexOf(')')).Replace(")", "").Trim().Replace(" ", ""));
+                                        cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(exceptionToString(ex));
+                                    }
+                                    finally
+                                    {
+                                        if (conn.State == ConnectionState.Open)
+                                        {
+                                            conn.Close();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            saveSessionLog("IMENIK HR --> snimiFirmu(int id_Ulica, string nazivFirma, string linkFirmaTelBroj, CookieCollection cookies) --> id_Firma == -1!!!! --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", nazivFirma=" + nazivFirma + "linkFirmaTelBroj=" + linkFirmaTelBroj, false);
+                        }
+                    }
+                    else
+                    {
+                       saveSessionLog("IMENIK HR --> snimiFirmu(int id_Ulica, string nazivFirma, string linkFirmaTelBroj, CookieCollection cookies) --> htmlNodesTelBrojevi IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", nazivFirma=" + nazivFirma + "linkFirmaTelBroj=" + linkFirmaTelBroj, false);
+                    }
+                }
+                else
+                {
+                    saveSessionLog("IMENIK HR --> snimiFirmu(int id_Ulica, string nazivFirma, string linkFirmaTelBroj, CookieCollection cookies) --> doc.LoadHtml(responseFromServer) IS NULL --> id_Ulica=" + id_Ulica.ToString() + ", nazivFirma=" + nazivFirma + "linkFirmaTelBroj=" + linkFirmaTelBroj, false);
+                }
+            }
+            else
+            {
+                saveSessionLog("IMENIK HR --> snimiFirmu(int id_Ulica, string nazivFirma, string linkFirmaTelBroj, CookieCollection cookies) --> responseFromServer IS NULL  --> id_Ulica=" + id_Ulica.ToString() + ", nazivFirma=" + nazivFirma + "linkFirmaTelBroj=" + linkFirmaTelBroj, false);
+            }
+        }
+
+        private void snimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies, string proxyIP, int proxyPort, string userAgent)
         {
             if (id_Ulica != -1 && !string.IsNullOrEmpty(linkOsobaTelBroj) && !string.IsNullOrEmpty(imePrezime))
             {
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(this._link.Replace("/imenik", "" ) + System.Web.HttpUtility.UrlEncode(linkOsobaTelBroj).Replace("%2f", "/"));
                 request.Method = "GET";
-                request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+                if (string.IsNullOrEmpty(userAgent))
+                {
+                    request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+                }
+                else
+                {
+                    request.UserAgent = userAgent;
+                }
+
+                if (!string.IsNullOrEmpty(proxyIP) && proxyPort > 0 )
+                {
+                    WebProxy wp = new WebProxy(proxyIP, proxyPort);
+                    wp.BypassProxyOnLocal = false;
+                    request.Timeout = 200000;
+                    request.Proxy = wp;
+                }
+
                 CookieContainer cc = new CookieContainer();
                 request.CookieContainer = cc;
                 for (int i = 0; i < cookies.Count; i++)
@@ -289,6 +478,7 @@ namespace TelImenikWebScraper.Classess
                         string osobaPostanskiBroj = "";
                         string osobaUlica = "";
                         string osobaKucniBroj = "";
+                        string osobaPunaAdresa = "";
                         string[] oip = imePrezime.Split(' ');
                         if (oip != null && oip.Length == 2)
                         {
@@ -303,9 +493,11 @@ namespace TelImenikWebScraper.Classess
                             {
                                 try
                                 {
+                                    osobaPunaAdresa = htmlNodesOsobaAdresa[0].InnerText.Trim();
                                     osobaPostanskiBroj = osobaPodaci[0].ToString().Replace(",", "");
                                     osobaNaselje = osobaPodaci[1].ToString().Replace(",", "");
                                     osobaUlica = osobaPodaci[2].ToString().Replace(",", ""); 
+
                                     if (osobaPodaci.Length == 4)
                                     {
                                         osobaKucniBroj = osobaPodaci[3].ToString();
@@ -342,6 +534,7 @@ namespace TelImenikWebScraper.Classess
                                     cmd.Parameters.AddWithValue("@osobaPostanskiBroj", osobaPostanskiBroj);
                                     cmd.Parameters.AddWithValue("@osobaUlica", osobaUlica);
                                     cmd.Parameters.AddWithValue("@osobaKucniBroj", osobaKucniBroj);
+                                    cmd.Parameters.AddWithValue("@osobaPunaAdresa", osobaPunaAdresa);
                                     cmd.Parameters.AddWithValue("@id_Ulica", id_Ulica);
                                     cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
                                     SqlParameter p = new SqlParameter("@id_Osoba", SqlDbType.Int);
@@ -362,7 +555,6 @@ namespace TelImenikWebScraper.Classess
                                     }
                                 }
                             }
-
                             if (id_Osoba != -1)
                             {
                                 for (int i = 0; i < htmlNodesTelBrojevi.Count; i++)
@@ -416,7 +608,7 @@ namespace TelImenikWebScraper.Classess
             }
         }
 
-        private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link, CookieCollection cookies)
+        private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link, CookieCollection cookies, string proxyIP, int proxyPort, string userAgent)
         {
             Tuple<CookieCollection, HtmlNodeCollection> t = null;
             try
@@ -425,7 +617,20 @@ namespace TelImenikWebScraper.Classess
                 HtmlNodeCollection nodes = new HtmlNodeCollection(null);
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
                 request.Method = "GET";
-                request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+                if (string.IsNullOrEmpty(userAgent))
+                {
+                    request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+                }
+                else
+                {
+                    request.UserAgent = userAgent;
+                }
+                if (!string.IsNullOrEmpty(proxyIP) && proxyPort > 0)
+                {
+                    WebProxy wp = new WebProxy(proxyIP, proxyPort);
+                    wp.BypassProxyOnLocal = true;
+                    request.Proxy = wp;
+                }
                 CookieContainer cc = new CookieContainer();
                 request.CookieContainer = cc;
                 if (cookies != null && cookies.Count != 0)
@@ -510,7 +715,13 @@ namespace TelImenikWebScraper.Classess
                     
                     if (!string.IsNullOrEmpty(this._link))
                     {
-                        Tuple<CookieCollection, HtmlNodeCollection> t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null);
+                        string userAgent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US) AppleWebKit/525.19 (KHTML, like Gecko) Chrome/1.0.154.53 Safari/525.19";
+                        string proxyIP = "91.224.207.150";
+                        int proxyPortNumber = 9999;
+
+                        
+
+                        Tuple<CookieCollection, HtmlNodeCollection> t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, proxyPortNumber, userAgent);
                         if (t != null)
                         {
                             HtmlNodeCollection nodes = (HtmlNodeCollection)t.Item2;
@@ -519,10 +730,17 @@ namespace TelImenikWebScraper.Classess
                             {
                                 for (int i = 0; i < nodes.Count; i++)
                                 {
-                                    SnimiOsobu(id_Ulica, nodes[i].ChildNodes[1].Attributes[0].Value.ToString(), nodes[i].ChildNodes[1].Attributes[1].Value.ToString(), (CookieCollection)t.Item1);
+                                    if (nodes[i].ParentNode.ParentNode.InnerHtml.Contains("POSLOVNI"))
+                                    {
+                                        snimiFirmu(id_Ulica, nodes[i].ChildNodes[1].Attributes[0].Value.ToString(), nodes[i].ChildNodes[1].Attributes[1].Value.ToString(), (CookieCollection)t.Item1, proxyIP, proxyPortNumber, userAgent);
+                                    }
+                                    else
+                                    {
+                                        snimiOsobu(id_Ulica, nodes[i].ChildNodes[1].Attributes[0].Value.ToString(), nodes[i].ChildNodes[1].Attributes[1].Value.ToString(), (CookieCollection)t.Item1, proxyIP, proxyPortNumber, userAgent);
+                                    }
                                 }
                                 currentResultsPage++;
-                                t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", (CookieCollection)t.Item1 );
+                                t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", (CookieCollection)t.Item1, proxyIP, proxyPortNumber, userAgent);
                                 if (t != null && t.Item2 != null)
                                 {
                                     nodes = (HtmlNodeCollection)t.Item2;

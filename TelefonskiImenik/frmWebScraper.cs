@@ -106,5 +106,26 @@ namespace TelefonskiImenik
             }
 
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("http://www.index.hr");
+            request.Method = "GET";
+            request.UserAgent = "PostmanRuntime / 7.3.0";
+
+            //WebProxy wp = new WebProxy("http://91.224.207.150:9999", false);
+            WebProxy wp = new WebProxy("http://201.140.113.90:37193", false);
+            request.Proxy = wp;
+            
+            
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            Stream dataStream = response.GetResponseStream();
+            StreamReader reader = new StreamReader(dataStream);
+            string responseFromServer = reader.ReadToEnd();
+            reader.Close();
+            dataStream.Close();
+            response.Close();
+
+        }
     }
 }
