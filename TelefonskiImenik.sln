@@ -8,10 +8,13 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{12FE03B8-1E56-4D6A-8E0B-28A612319A61}"
 	ProjectSection(SolutionItems) = preProject
 		SQL\ImportUlice.sql = SQL\ImportUlice.sql
+		TelImenikWebScraper\bin\Debug\netcoreapp2.1\ProxyServerList.txt = TelImenikWebScraper\bin\Debug\netcoreapp2.1\ProxyServerList.txt
+		TelImenikWebScraper\bin\Debug\netcoreapp2.1\ProxyServerListOld.txt = TelImenikWebScraper\bin\Debug\netcoreapp2.1\ProxyServerListOld.txt
 		SQL\TelImenik.bak = SQL\TelImenik.bak
+		TelImenikWebScraper\bin\Debug\netcoreapp2.1\UserAgentList.txt = TelImenikWebScraper\bin\Debug\netcoreapp2.1\UserAgentList.txt
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelImenikWebScraper", "TelImenikWebScraper\TelImenikWebScraper.csproj", "{05D79D23-3EE7-493C-87A8-1B5E176B0A9F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelImenikWebScraper", "TelImenikWebScraper\TelImenikWebScraper.csproj", "{05D79D23-3EE7-493C-87A8-1B5E176B0A9F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
