@@ -854,7 +854,7 @@ namespace TelImenikWebScraper.Classess
 
         private void snimiOsobeFirme(HtmlNodeCollection nodes, int id_Ulica, CookieCollection cookies, string proxyIP, string userAgent, int requestTimeout, ref bool IsCaptcha)
         {
-            while (nodes != null && nodes.Count != 0)
+            if (nodes != null)
             {
                 for (int i = 0; i < nodes.Count; i++)
                 {
@@ -870,7 +870,7 @@ namespace TelImenikWebScraper.Classess
                         }
                         else
                         {
-                            i = nodes.Count-1;
+                            i = nodes.Count - 1;
                         }
                     }
                 }
