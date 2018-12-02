@@ -143,6 +143,7 @@ namespace TelImenikWebScraper.Classess
                     }
                 }
             }
+            Console.WriteLine((!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1"  ) + "Getting new proxy server!");
             return proxyServer;
         }
 
@@ -271,6 +272,7 @@ namespace TelImenikWebScraper.Classess
         {
             if (!string.IsNullOrEmpty(_connectionString))
             {
+                Console.WriteLine(logText);
                 using (SqlConnection conn = new SqlConnection(_connectionString))
                 {
                     try
@@ -554,7 +556,7 @@ namespace TelImenikWebScraper.Classess
             {
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(this._link.Replace("/imenik", "" ) + System.Web.HttpUtility.UrlEncode(linkOsobaTelBroj).Replace("%2f", "/"));
                 request.Method = "GET";
-                request.ReadWriteTimeout = 200000;
+                request.ReadWriteTimeout = requestTimeout + 4000; ;
                 if (string.IsNullOrEmpty(userAgent))
                 {
                     request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
@@ -571,7 +573,7 @@ namespace TelImenikWebScraper.Classess
                     request.Timeout = requestTimeout;
                     request.Proxy = wp;
                     request.KeepAlive = false;
-                    request.Timeout = System.Threading.Timeout.Infinite;
+                    request.Timeout = requestTimeout + 4000;//System.Threading.Timeout.Infinite;
                     request.ProtocolVersion = HttpVersion.Version10;
                     request.AllowWriteStreamBuffering = false;
                 }
@@ -775,7 +777,7 @@ namespace TelImenikWebScraper.Classess
                 HtmlNodeCollection nodes = new HtmlNodeCollection(null);
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
                 request.Method = "GET";
-                request.ReadWriteTimeout = 200000;
+                request.ReadWriteTimeout = requestTimeout + 4000;//200000;
                 HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
                 request.CachePolicy = noCachePolicy;
                 if (string.IsNullOrEmpty(userAgent))
@@ -790,10 +792,9 @@ namespace TelImenikWebScraper.Classess
                 {
                     WebProxy wp = new WebProxy(proxyIP);
                     wp.BypassProxyOnLocal = true;
-                    request.Timeout = requestTimeout;
+                    request.Timeout = requestTimeout + 4000;
                     request.Proxy = wp;
                     request.KeepAlive = false;
-                    request.Timeout = System.Threading.Timeout.Infinite;
                     request.ProtocolVersion = HttpVersion.Version10;
                     request.AllowWriteStreamBuffering = false;
                 }
@@ -854,10 +855,15 @@ namespace TelImenikWebScraper.Classess
             catch (Exception ex)
             {
                 IsCaptcha = false;
-                if (ex.Message.ToString() != "The remote server returned an error: (500) Internal Server Error.")
+                if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") )
+                {
+                    IsCaptcha = true;
+                }
+                else if (ex.Message.ToString() != "The remote server returned an error: (500) Internal Server Error.")
                 {
                     saveSessionLog(ex);
                 }
+                
                 else
                 {
                     Console.WriteLine(ex.Message.ToString());
@@ -924,12 +930,16 @@ namespace TelImenikWebScraper.Classess
                     if (!string.IsNullOrEmpty(this._link))
                     {
                         bool isCaptcha = false;
+                        int ulicaCounter = 1;
                         Tuple<CookieCollection, HtmlNodeCollection> t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
                         while (isCaptcha == true && proxyIP != "")
                         {
                             proxyIP = getProxyServer();
                             userAgent = getUserAgent();
+                            ulicaCounter++;
                             t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
+                            Console.WriteLine(ulicaNaziv + " " + ulicaCounter.ToString() + " --> proxy IP: " + proxyIP);
+
                         }
                         if (t != null)
                         {
