@@ -762,8 +762,15 @@ namespace TelImenikWebScraper.Classess
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(exceptionToString(ex));
-                    saveSessionLog(ex);
+                    if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host"))
+                    {
+                        IsCaptcha = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine(exceptionToString(ex));
+                        saveSessionLog(ex);
+                    }
                 }
             }
         }
@@ -855,7 +862,7 @@ namespace TelImenikWebScraper.Classess
             catch (Exception ex)
             {
                 IsCaptcha = false;
-                if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") )
+                if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host") )
                 {
                     IsCaptcha = true;
                 }
