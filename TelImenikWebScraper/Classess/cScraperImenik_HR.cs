@@ -180,6 +180,7 @@ namespace TelImenikWebScraper.Classess
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             Stream dataStream = response.GetResponseStream();
             StreamReader reader = new StreamReader(dataStream);
+            reader.BaseStream.ReadTimeout = 8000;
             string responseFromServer = reader.ReadToEnd();
 
             var doc = new HtmlAgilityPack.HtmlDocument();
@@ -482,6 +483,7 @@ namespace TelImenikWebScraper.Classess
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             Stream dataStream = response.GetResponseStream();
             StreamReader reader = new StreamReader(dataStream);
+            reader.BaseStream.ReadTimeout = requestTimeOut + 8000;
             string responseFromServer = reader.ReadToEnd();
             reader.Close();
             reader.Dispose();
@@ -683,6 +685,7 @@ namespace TelImenikWebScraper.Classess
                     HttpWebResponse response = (HttpWebResponse)request.GetResponse();
                     Stream dataStream = response.GetResponseStream();
                     StreamReader reader = new StreamReader(dataStream);
+                    reader.BaseStream.ReadTimeout = requestTimeout + 8000;
                     string responseFromServer = reader.ReadToEnd();
                     reader.Close();
                     reader.Dispose();
@@ -911,6 +914,7 @@ namespace TelImenikWebScraper.Classess
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
                 Stream dataStream = response.GetResponseStream();
                 StreamReader reader = new StreamReader(dataStream);
+                reader.BaseStream.ReadTimeout = requestTimeout + 8000;
                 string responseFromServer = reader.ReadToEnd();
 
                 if (!string.IsNullOrEmpty(responseFromServer) && !responseFromServer.Contains("Odmori malo, zaslužio si..."))
