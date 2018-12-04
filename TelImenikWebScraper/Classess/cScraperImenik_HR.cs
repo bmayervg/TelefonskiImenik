@@ -40,13 +40,13 @@ namespace TelImenikWebScraper.Classess
 
         private void loadUsqerAgentListFromFile()
         {
-            Console.WriteLine("\r{0}", "OBTAINING USER AGENT LIST FROM FILE");
+            Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "OBTAINING USER AGENT LIST FROM FILE");
 
             if (!string.IsNullOrEmpty(_userAgentListFilePath))
             {
                 _userAgentList = System.IO.File.ReadAllLines(_userAgentListFilePath).ToList<String>();
             }
-            Console.WriteLine("\r{0}", "OBTAINING USER AGENT LIST FROM FILE --> DONE ");
+            Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "OBTAINING USER AGENT LIST FROM FILE --> DONE ");
         }
 
         private string getUserAgent()
@@ -89,7 +89,7 @@ namespace TelImenikWebScraper.Classess
         {
             if (!_loadProxyServerFromWeb)
             {
-                Console.WriteLine("\r{0}", "OBTAINING PROXY SERVER LIST FROM FILE");
+                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "OBTAINING PROXY SERVER LIST FROM FILE");
                 if (!string.IsNullOrEmpty(_proxyServerListFilePath))
                 {
                     _proxyServerList = System.IO.File.ReadAllLines(_proxyServerListFilePath).ToList<String>();
@@ -117,7 +117,7 @@ namespace TelImenikWebScraper.Classess
                         }
                     }
                 }
-                Console.WriteLine("\r{0}", "OBTAINING PROXY SERVER LIST FROM FILE-> DONE --> PROXY SERVER LIST COUNT" + _proxyServerList.Count.ToString());
+                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "OBTAINING PROXY SERVER LIST FROM FILE-> DONE --> PROXY SERVER LIST COUNT" + _proxyServerList.Count.ToString());
             }
         }
 
@@ -164,7 +164,7 @@ namespace TelImenikWebScraper.Classess
             {
                 ps = getProxyServerFromExistingList();
             }
-            Console.WriteLine( "{0}", (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1"  ) + " --> Getting new proxy server!");
+            Console.WriteLine( "{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1"  ) + " --> Getting new proxy server!");
             return ps;
         }
 
@@ -251,7 +251,7 @@ namespace TelImenikWebScraper.Classess
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("\r{0}", exceptionToString(ex));
+                        Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
                     }
                     finally
                     {
@@ -264,7 +264,7 @@ namespace TelImenikWebScraper.Classess
             }
             else
             {
-                Console.WriteLine("\r{0}", "IMENIKHR --> _connectionString NOT INITIALIZED!");
+                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "IMENIKHR --> _connectionString NOT INITIALIZED!");
             }
         }
 
@@ -285,7 +285,7 @@ namespace TelImenikWebScraper.Classess
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("\r{0}", exceptionToString(ex));
+                        Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
                     }
                     finally
                     {
@@ -298,7 +298,7 @@ namespace TelImenikWebScraper.Classess
             }
             else
             {
-                Console.WriteLine("\r{0}", "IMENIKHR --> _connectionString NOT INITIALIZED!");
+                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "IMENIKHR --> _connectionString NOT INITIALIZED!");
             }
         }
 
@@ -351,7 +351,7 @@ namespace TelImenikWebScraper.Classess
         {
             if (!string.IsNullOrEmpty(_connectionString))
             {
-                Console.WriteLine("\r{0}", logText);
+                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + logText);
                 using (SqlConnection conn = new SqlConnection(_connectionString))
                 {
                     try
@@ -443,7 +443,7 @@ namespace TelImenikWebScraper.Classess
                 else
                 {
                     saveSessionLog("IMENIK HR --> tblNeprocesiraneUlice EMPTY!", false);
-                    Console.WriteLine("\r{0}",  "tblNeprocesiraneUlice ROW COUNT == 0");
+                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "tblNeprocesiraneUlice ROW COUNT == 0");
                 }
             }
             else
@@ -567,7 +567,7 @@ namespace TelImenikWebScraper.Classess
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("\r{0}", exceptionToString(ex));
+                                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
                             }
                             finally
                             {
@@ -597,7 +597,7 @@ namespace TelImenikWebScraper.Classess
                                     }
                                     catch (Exception ex)
                                     {
-                                        Console.WriteLine("\r{0}", exceptionToString(ex));
+                                        Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
                                     }
                                     finally
                                     {
@@ -753,7 +753,7 @@ namespace TelImenikWebScraper.Classess
                                 HtmlAgilityPack.HtmlNodeCollection htmlNodesTelBrojevi = doc.DocumentNode.SelectNodes("//td[contains(concat(' ', @class, ' '), ' data_tel ')]");
                                 if (htmlNodesTelBrojevi != null && htmlNodesTelBrojevi.Count != 0)
                                 {
-                                    Console.WriteLine("\r{0}", "IMENIK HR --> SnimiOsobu --> SAVING OSOBA /TELEFON TO DATABASE -->" + osobaIme + " " + osobaPrezime );
+                                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "IMENIK HR --> SnimiOsobu --> SAVING OSOBA /TELEFON TO DATABASE -->" + osobaIme + " " + osobaPrezime );
                                     using (SqlConnection conn = new SqlConnection(_connectionString))
                                     {
                                         try
@@ -778,7 +778,7 @@ namespace TelImenikWebScraper.Classess
                                         }
                                         catch (Exception ex)
                                         {
-                                            Console.WriteLine("\r{0}", exceptionToString(ex));
+                                            Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
                                         }
                                         finally
                                         {
@@ -807,7 +807,7 @@ namespace TelImenikWebScraper.Classess
                                                 }
                                                 catch (Exception ex)
                                                 {
-                                                    Console.WriteLine("\r{0}", exceptionToString(ex));
+                                                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
                                                 }
                                                 finally
                                                 {
@@ -848,7 +848,7 @@ namespace TelImenikWebScraper.Classess
                     }
                     else
                     {
-                        Console.WriteLine("\r{0}", exceptionToString(ex));
+                        Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
                         saveSessionLog(ex);
                     }
                 }
@@ -953,7 +953,7 @@ namespace TelImenikWebScraper.Classess
                 
                 else
                 {
-                    Console.WriteLine("\r{0}", ex.Message.ToString());
+                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + ex.Message.ToString());
                 }
             }
             return t;
@@ -1009,7 +1009,7 @@ namespace TelImenikWebScraper.Classess
                     }
                 }
                 string log = (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name ) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1" ) + "proxy: " + proxyIP + "user agent:" + " --> id_Ulica = " + id_Ulica.ToString() + ", mjesto: " + mjestoNaziv + ", ulica: " + ulicaNaziv;
-                Console.WriteLine("\r{0}", log);
+                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + log);
                 bool isUlicaProcessed = false;
                 if (id_Ulica != -1)
                 {
@@ -1025,7 +1025,7 @@ namespace TelImenikWebScraper.Classess
                             userAgent = getUserAgent();
                             ulicaCounter++;
                             t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                            Console.WriteLine("\r{0}", ulicaNaziv + " " + ulicaCounter.ToString() + " --> proxy IP: " + proxyIP);
+                            Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + ulicaNaziv + " " + ulicaCounter.ToString() + " --> proxy IP: " + proxyIP);
 
                         }
                         if (t != null)
@@ -1087,7 +1087,7 @@ namespace TelImenikWebScraper.Classess
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("\r{0}", exceptionToString(ex));
+                                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
                             }
                             finally
                             {
