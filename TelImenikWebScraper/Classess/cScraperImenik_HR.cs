@@ -168,59 +168,86 @@ namespace TelImenikWebScraper.Classess
             return ps;
         }
 
-        private string getProxyServerDirectlyFromWeb()
+        private string getProxyServerDirectlyFromWebFreeProxy(string userAgent)
         {
             string proxyServer = "";
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("https://free-proxy-list.net");
             request.Method = "GET";
-            request.ReadWriteTimeout = 1000;//200000;
+            request.ReadWriteTimeout = 4000;//200000;
             HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
             request.CachePolicy = noCachePolicy;
-            request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+            request.UserAgent = userAgent;
+            string responseFromServer = "";
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             Stream dataStream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(dataStream);
-            reader.BaseStream.ReadTimeout = 8000;
-            string responseFromServer = reader.ReadToEnd();
-
-            var doc = new HtmlAgilityPack.HtmlDocument();
-            doc.LoadHtml(responseFromServer);
-            HtmlAgilityPack.HtmlNodeCollection rows = doc.DocumentNode.SelectNodes("//table[@id='proxylisttable']//tbody//tr");
-            foreach (HtmlNode n in rows)
+            if (dataStream != null)
             {
-                if (n.ChildNodes[4].InnerText.ToString().Contains("elite proxy"))
+                StreamReader reader = new StreamReader(dataStream);
+                responseFromServer = reader.ReadToEnd();
+
+                var doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(responseFromServer);
+                HtmlAgilityPack.HtmlNodeCollection rows = doc.DocumentNode.SelectNodes("//table[@id='proxylisttable']//tbody//tr");
+                foreach (HtmlNode n in rows)
                 {
-                    proxyServer = n.ChildNodes[0].InnerText.ToString() + ":" + n.ChildNodes[1].InnerText.ToString();
-                    lock (_usedProxyServerList)
+                    if (n.ChildNodes[4].InnerText.ToString().Contains("elite proxy"))
                     {
-                        if (_usedProxyServerList == null)
+                        proxyServer = n.ChildNodes[0].InnerText.ToString() + ":" + n.ChildNodes[1].InnerText.ToString();
+                        lock (_usedProxyServerList)
                         {
-                            _usedProxyServerList = new List<string>();
-                        }
-                        if (!_usedProxyServerList.Contains(proxyServer))
-                        {
-                            _usedProxyServerList.Add(proxyServer);
-                            string ip = "";
-                            int port = 0;
-                            string[] serverData = proxyServer.Split(":");
-                            if (serverData != null && serverData.Length == 2)
+                            if (_usedProxyServerList == null)
                             {
-                                ip = serverData[0].ToString();
-                                port = Convert.ToInt32(serverData[1]);
+                                _usedProxyServerList = new List<string>();
                             }
-                            if (!string.IsNullOrEmpty(ip))
+                            if (!_usedProxyServerList.Contains(proxyServer))
                             {
-                                try
+                                _usedProxyServerList.Add(proxyServer);
+                                string ip = "";
+                                int port = 0;
+                                string[] serverData = proxyServer.Split(":");
+                                if (serverData != null && serverData.Length == 2)
                                 {
-                                    TcpClient client = new TcpClient(ip, port);
-                                    break;
+                                    ip = serverData[0].ToString();
+                                    port = Convert.ToInt32(serverData[1]);
                                 }
-                                catch (Exception ex)
+                                if (!string.IsNullOrEmpty(ip))
                                 {
-                                    proxyServer = "";
+                                    try
+                                    {
+                                        TcpClient client = new TcpClient(ip, port);
+                                        break;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        proxyServer = "";
+                                    }
                                 }
                             }
                         }
+                    }
+                }
+            }
+            return proxyServer;
+        }
+
+        private string getProxyServerDirectlyFromWeb()
+        {
+            string proxyServer = "";
+            try
+            {
+                proxyServer = getProxyServerDirectlyFromWebFreeProxy(getUserAgent());
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond"))
+                {
+                    try
+                    {
+                        proxyServer = getProxyServerDirectlyFromWebFreeProxy(getUserAgent());
+                    }
+                    catch (Exception exex)
+                    {
+                        Console.WriteLine("ERROR GETTING PROXY SERVER");
                     }
                 }
             }
@@ -439,7 +466,6 @@ namespace TelImenikWebScraper.Classess
                     this._tblNeprocesiraneUlice = tblNeprocesiraneUlice;
                     this._totalRows = _tblNeprocesiraneUlice.Rows.Count;
                     runScraper();
-
                 }
                 else
                 {
@@ -480,13 +506,16 @@ namespace TelImenikWebScraper.Classess
 
             CookieContainer cc = new CookieContainer();
             request.CookieContainer = cc;
+            string responseFromServer = "";
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             Stream dataStream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(dataStream);
-            reader.BaseStream.ReadTimeout = requestTimeOut + 8000;
-            string responseFromServer = reader.ReadToEnd();
-            reader.Close();
-            reader.Dispose();
+            if (dataStream != null)
+            {
+                StreamReader reader = new StreamReader(dataStream);
+                responseFromServer = reader.ReadToEnd();
+                reader.Close();
+                reader.Dispose();
+            }
             dataStream.Close();
             dataStream.Dispose();
             response.Close();
@@ -682,13 +711,16 @@ namespace TelImenikWebScraper.Classess
                 }
                 try
                 {
+                    string responseFromServer = "";
                     HttpWebResponse response = (HttpWebResponse)request.GetResponse();
                     Stream dataStream = response.GetResponseStream();
-                    StreamReader reader = new StreamReader(dataStream);
-                    reader.BaseStream.ReadTimeout = requestTimeout + 8000;
-                    string responseFromServer = reader.ReadToEnd();
-                    reader.Close();
-                    reader.Dispose();
+                    if (dataStream != null)
+                    {
+                        StreamReader reader = new StreamReader(dataStream);
+                        responseFromServer = reader.ReadToEnd();
+                        reader.Close();
+                        reader.Dispose();
+                    }
                     dataStream.Close();
                     dataStream.Dispose();
                     response.Close();
@@ -911,11 +943,17 @@ namespace TelImenikWebScraper.Classess
                         cc.Add(c);
                     }
                 }
+                string responseFromServer = "";
+
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
                 Stream dataStream = response.GetResponseStream();
-                StreamReader reader = new StreamReader(dataStream);
-                reader.BaseStream.ReadTimeout = requestTimeout + 8000;
-                string responseFromServer = reader.ReadToEnd();
+                if (dataStream != null)
+                {
+                    StreamReader reader = new StreamReader(dataStream);
+                    responseFromServer = reader.ReadToEnd();
+                    reader.Close();
+                    reader.Dispose();
+                }
 
                 if (!string.IsNullOrEmpty(responseFromServer) && !responseFromServer.Contains("Odmori malo, zaslužio si..."))
                 {
@@ -935,18 +973,15 @@ namespace TelImenikWebScraper.Classess
                     IsCaptcha = false;
                     saveSessionLog("IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer empty --> link" + link, false);
                 }
-                
-                response.Close();
-                response.Dispose();
-                reader.Close();
-                reader.Dispose();
                 dataStream.Close();
                 dataStream.Dispose();
+                response.Close();
+                response.Dispose();
             }
             catch (Exception ex)
             {
                 IsCaptcha = false;
-                if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host") )
+                if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host") || ex.Message.ToString().Contains("The remote server returned an error: (403) Forbidden") )
                 {
                     IsCaptcha = true;
                 }
@@ -1032,45 +1067,52 @@ namespace TelImenikWebScraper.Classess
                             Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + ulicaNaziv + " " + ulicaCounter.ToString() + " --> proxy IP: " + proxyIP);
 
                         }
-                        if (t != null)
+                        if (!string.IsNullOrEmpty(proxyIP))
                         {
-                            HtmlNodeCollection nodes = (HtmlNodeCollection)t.Item2;
-                            if (nodes != null && nodes.Count != 0)
+                            if (t != null)
                             {
-                                while (nodes != null && nodes.Count != 0)
+                                HtmlNodeCollection nodes = (HtmlNodeCollection)t.Item2;
+                                if (nodes != null && nodes.Count != 0)
                                 {
-                                    snimiOsobeFirme(nodes, id_Ulica, (CookieCollection)t.Item1, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                                    while (isCaptcha == true && proxyIP != "")
+                                    while (nodes != null && nodes.Count != 0)
                                     {
-                                        proxyIP = getProxyServer();
-                                        userAgent = getUserAgent();
-                                        currentResultsPage = 1;
-                                        t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", ( t != null && t.Item1 != null ? (CookieCollection)t.Item1: null ), proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                                    }
-                                    currentResultsPage++;
-                                    t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                                    while (isCaptcha == true && proxyIP != "")
-                                    {
-                                        proxyIP = getProxyServer();
-                                        userAgent = getUserAgent();
-                                        t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", (t != null && t.Item1 != null ? (CookieCollection)t.Item1 : null), proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                                    }
-                                    if (t != null && t.Item2 != null)
-                                    {
-                                        nodes = (HtmlNodeCollection)t.Item2;
-                                    }
-                                    else
-                                    {
-                                        nodes = null;
+                                        snimiOsobeFirme(nodes, id_Ulica, (CookieCollection)t.Item1, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
+                                        while (isCaptcha == true && proxyIP != "")
+                                        {
+                                            proxyIP = getProxyServer();
+                                            userAgent = getUserAgent();
+                                            currentResultsPage = 1;
+                                            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", (t != null && t.Item1 != null ? (CookieCollection)t.Item1 : null), proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
+                                        }
+                                        currentResultsPage++;
+                                        t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
+                                        while (isCaptcha == true && proxyIP != "")
+                                        {
+                                            proxyIP = getProxyServer();
+                                            userAgent = getUserAgent();
+                                            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", (t != null && t.Item1 != null ? (CookieCollection)t.Item1 : null), proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
+                                        }
+                                        if (t != null && t.Item2 != null)
+                                        {
+                                            nodes = (HtmlNodeCollection)t.Item2;
+                                        }
+                                        else
+                                        {
+                                            nodes = null;
+                                        }
                                     }
                                 }
                             }
+                            else
+                            {
+                                saveSessionLog((!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + "<--> IMENIKHR -->  Tuple<CookieCollection, HtmlNodeCollection> t = NULL -- > LINK -->" + this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + ulicaNaziv + "%20mjesto:" + mjestoNaziv + ".html --> log: " + log, false);
+                            }
+                            isUlicaProcessed = true;
                         }
                         else
                         {
-                            saveSessionLog( (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + "<--> IMENIKHR -->  Tuple<CookieCollection, HtmlNodeCollection> t = NULL -- > LINK -->" + this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + ulicaNaziv + "%20mjesto:" + mjestoNaziv + ".html --> log: " + log, false);
+                            _currentRow--;
                         }
-                        isUlicaProcessed = true;
                     }
                     else
                     {

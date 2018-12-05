@@ -58,18 +58,7 @@ namespace TelefonskiImenik
                 {
                     MessageBox.Show( n.ChildNodes[0].InnerText.ToString() + ":" + n.ChildNodes[1].InnerText.ToString());
                 }
-
-                //for (int i = 0; i < n.ChildNodes.Count; i++)
-                //{
-                //    MessageBox.Show(i.ToString() + " Name:" + n.ChildNodes[i].Name.ToString() + " Value" + n.ChildNodes[i].InnerText.ToString());
-                //}
-                //foreach (HtmlNode cell in n.ChildNodes)
-                //{
-                //    MessageBox.Show(cell.InnerText);
-                //}
             }
-                //"//*[@id=\"proxylisttable\"]");
-           
         }
     }
 }
