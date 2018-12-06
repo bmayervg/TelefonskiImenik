@@ -24,6 +24,8 @@ namespace TelImenikWebScraper.Classess
         private string _proxyServerListFilePath;
         private List<String> _proxyServerList;
         private List<String> _usedProxyServerList;
+        private List<String> _proxyServerListFromWeb;
+        private List<String> _usedproxyServerListFromWeb;
 
         private string _userAgentListFilePath;
         private List<String> _userAgentList;
@@ -38,7 +40,7 @@ namespace TelImenikWebScraper.Classess
 
         #region USER_AGENT
 
-        private void loadUsqerAgentListFromFile()
+        private void loadUserAgentListFromFile()
         {
             Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "OBTAINING USER AGENT LIST FROM FILE");
 
@@ -153,23 +155,53 @@ namespace TelImenikWebScraper.Classess
             return proxyServer;
         }
 
+        private string getProxyServerFromExistingListFromWeb()
+        {
+            string proxyServer = "";
+            lock (_proxyServerListFromWeb)
+            {
+                lock (_usedproxyServerListFromWeb)
+                {
+                    if (_proxyServerListFromWeb != null && _proxyServerListFromWeb.Count != 0)
+                    {
+                        proxyServer = _proxyServerListFromWeb[0].ToString();
+                        _proxyServerListFromWeb.RemoveAt(0);
+                        if (_usedProxyServerList == null)
+                        {
+                            _usedproxyServerListFromWeb = new List<string>();
+                        }
+                        _usedproxyServerListFromWeb.Add(proxyServer);
+                    }
+                    else
+                    {
+                        _proxyServerListFromWeb = new List<string>();
+                        getProxyServerFromExistingListFromWeb();
+                        _usedproxyServerListFromWeb = new List<string>();
+                    }
+                }
+            }
+            return proxyServer;
+        }
+
+
         private string getProxyServer()
         {
             string ps = "";
             if (_loadProxyServerFromWeb)
             {
-                ps = getProxyServerDirectlyFromWeb();
+                ps = getProxyServerFromExistingListFromWeb();
             }
             else
             {
                 ps = getProxyServerFromExistingList();
             }
-            Console.WriteLine( "{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1"  ) + " --> Getting new proxy server!");
+            Console.WriteLine( "\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1"  ) + " --> Getting new proxy server!");
             return ps;
         }
 
-        private string getProxyServerDirectlyFromWebFreeProxy(string userAgent)
+        private void fillProxyServerDirectlyFromWebFreeProxy(string userAgent)
         {
+            Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + " --> FILLING PROXY LIST FROM  https://free-proxy-list.net!");
             string proxyServer = "";
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("https://free-proxy-list.net");
             request.Method = "GET";
@@ -188,71 +220,57 @@ namespace TelImenikWebScraper.Classess
                 var doc = new HtmlAgilityPack.HtmlDocument();
                 doc.LoadHtml(responseFromServer);
                 HtmlAgilityPack.HtmlNodeCollection rows = doc.DocumentNode.SelectNodes("//table[@id='proxylisttable']//tbody//tr");
+                int counter = 0;
                 foreach (HtmlNode n in rows)
                 {
                     if (n.ChildNodes[4].InnerText.ToString().Contains("elite proxy"))
                     {
                         proxyServer = n.ChildNodes[0].InnerText.ToString() + ":" + n.ChildNodes[1].InnerText.ToString();
-                        lock (_usedProxyServerList)
+
+                        if (_proxyServerListFromWeb == null)
                         {
-                            if (_usedProxyServerList == null)
+                            _proxyServerListFromWeb = new List<string>();
+                        }
+
+                        string ip = "";
+                        int port = 0;
+                        string[] serverData = proxyServer.Split(":");
+                        if (serverData != null && serverData.Length == 2)
+                        {
+                            ip = serverData[0].ToString();
+                            port = Convert.ToInt32(serverData[1]);
+                        }
+                        if (!string.IsNullOrEmpty(ip))
+                        {
+                            try
                             {
-                                _usedProxyServerList = new List<string>();
+                                TcpClient client = new TcpClient(ip, port);
                             }
-                            if (!_usedProxyServerList.Contains(proxyServer))
+                            catch (Exception ex)
                             {
-                                _usedProxyServerList.Add(proxyServer);
-                                string ip = "";
-                                int port = 0;
-                                string[] serverData = proxyServer.Split(":");
-                                if (serverData != null && serverData.Length == 2)
-                                {
-                                    ip = serverData[0].ToString();
-                                    port = Convert.ToInt32(serverData[1]);
-                                }
-                                if (!string.IsNullOrEmpty(ip))
-                                {
-                                    try
-                                    {
-                                        TcpClient client = new TcpClient(ip, port);
-                                        break;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        proxyServer = "";
-                                    }
-                                }
+                                proxyServer = "";
                             }
                         }
+                        if (!string.IsNullOrEmpty(proxyServer) && !_proxyServerListFromWeb.Contains(proxyServer))
+                        {
+                            _proxyServerListFromWeb.Add(proxyServer);
+                        }
+                        counter++;
+                        switch (counter % 4)
+                        {
+                            case 0: Console.Write("    /"); counter = 0; break;
+                            case 1: Console.Write("    -"); break;
+                            case 2: Console.Write("    \\"); break;
+                            case 3: Console.Write("    |"); break;
+                        }
+                        Console.SetCursorPosition(Console.CursorLeft - 5, Console.CursorTop);
                     }
                 }
             }
-            return proxyServer;
+            Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + " --> FILLING PROXY LIST FROM  https://free-proxy-list.net --> DONE!");
         }
 
-        private string getProxyServerDirectlyFromWeb()
-        {
-            string proxyServer = "";
-            try
-            {
-                proxyServer = getProxyServerDirectlyFromWebFreeProxy(getUserAgent());
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond"))
-                {
-                    try
-                    {
-                        proxyServer = getProxyServerDirectlyFromWebFreeProxy(getUserAgent());
-                    }
-                    catch (Exception exex)
-                    {
-                        Console.WriteLine("ERROR GETTING PROXY SERVER");
-                    }
-                }
-            }
-            return proxyServer;
-        }
+        
 
         #endregion
 
@@ -411,6 +429,8 @@ namespace TelImenikWebScraper.Classess
             _proxyServerListFilePath = proxyServerListFilePath;
             _usedProxyServerList = new List<string>();
             _usedUserAgentList = new List<string>();
+            _proxyServerListFromWeb = new List<string>();
+            _usedproxyServerListFromWeb = new List<string>();
             _userAgentListFilePath = userAgentListFilePath;
             _timeBetweenHTTPRequests_MS = timeBetweenHTTPRequests_MS;
             _link = link;
@@ -439,8 +459,10 @@ namespace TelImenikWebScraper.Classess
             this._currentRow = -1;
             this._totalRows = 0;
             this._threadsRunningCount = 0;
+            loadUserAgentListFromFile();
             loadProxyServerListFromFile();
-            loadUsqerAgentListFromFile();
+            string agent = getUserAgent();
+            fillProxyServerDirectlyFromWebFreeProxy(agent);
     }
 
         public void Start()
