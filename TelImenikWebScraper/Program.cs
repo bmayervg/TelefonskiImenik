@@ -8,7 +8,7 @@ namespace TelImenikWebScraper
     {
         static void Main(string[] args)
         {
-            cScraperImenik_HR s = new cScraperImenik_HR(ConfigurationManager.AppSettings["connectionString"].ToString(), Convert.ToInt32(ConfigurationManager.AppSettings["imenikHRWSNumberOfThreads"]), ConfigurationManager.AppSettings["imenikHRLink"].ToString(), Convert.ToInt32(ConfigurationManager.AppSettings["imenikHRWSleepTimeBetweenThreads"]), ConfigurationManager.AppSettings["proxyServerListFilePath"].ToString(), ConfigurationManager.AppSettings["userAgentList"].ToString(), true);
+            cScraperImenik_HR s = new cScraperImenik_HR(ConfigurationManager.AppSettings["connectionString"].ToString(), Convert.ToInt32(ConfigurationManager.AppSettings["imenikHRWSNumberOfThreads"]), ConfigurationManager.AppSettings["imenikHRLink"].ToString(), Convert.ToInt32(ConfigurationManager.AppSettings["imenikHRWSleepTimeBetweenThreads"]), ConfigurationManager.AppSettings["proxyServerListFilePath"].ToString(), ConfigurationManager.AppSettings["userAgentList"].ToString(), false);
             s.Start();
             
         }

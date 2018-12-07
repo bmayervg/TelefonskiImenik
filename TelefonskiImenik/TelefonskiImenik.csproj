@@ -49,25 +49,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Forms\frmImenikPretraga.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmImenikPretraga.Designer.cs">
+      <DependentUpon>frmImenikPretraga.cs</DependentUpon>
+    </Compile>
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
-    <Compile Include="frmWebScraper.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="frmWebScraper.Designer.cs">
-      <DependentUpon>frmWebScraper.cs</DependentUpon>
-    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Forms\frmImenikPretraga.resx">
+      <DependentUpon>frmImenikPretraga.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="frmWebScraper.resx">
-      <DependentUpon>frmWebScraper.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

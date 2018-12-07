@@ -21,12 +21,6 @@ namespace TelefonskiImenik
             InitializeComponent();
         }
        
-        private void webScraperToolStripMenuItem1_Click(object sender, EventArgs e)
-        {
-            frmWebScraper frm = new frmWebScraper();
-            frm.Show();
-        }
-
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show("EXIT ?", "Exit", MessageBoxButtons.YesNoCancel) == DialogResult.Yes)
@@ -37,13 +31,23 @@ namespace TelefonskiImenik
 
         private void button1_Click(object sender, EventArgs e)
         {
-            
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("https://free-proxy-list.net");
-            request.Method = "GET";
-            request.ReadWriteTimeout = 1000;//200000;
+
+            var postData = "xpp=5&xf1=4&xf5=1";
+            var data = Encoding.ASCII.GetBytes(postData);
+
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("http://spys.one/free-proxy-list/ALL/");
+            request.Method = "POST";
+            request.ContentType = "application/x-www-form-urlencoded";
+            request.ContentLength = data.Length;
+            request.ReadWriteTimeout = 3000;//200000;
             HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
             request.CachePolicy = noCachePolicy;
             request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+            using (var stream = request.GetRequestStream())
+            {
+                stream.Write(data, 0, data.Length);
+            }
+
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             Stream dataStream = response.GetResponseStream();
             StreamReader reader = new StreamReader(dataStream);
@@ -51,7 +55,7 @@ namespace TelefonskiImenik
 
             var doc = new HtmlAgilityPack.HtmlDocument();
             doc.LoadHtml(responseFromServer);
-            HtmlAgilityPack.HtmlNodeCollection rows = doc.DocumentNode.SelectNodes("//table[@id='proxylisttable']//tbody//tr");
+            HtmlAgilityPack.HtmlNodeCollection rows = doc.DocumentNode.SelectNodes("//tr[@class='spy1xx']");
             foreach (HtmlNode n in rows)
             {
                 if(n.ChildNodes[4].InnerText.ToString().Contains("elite proxy") )
@@ -59,6 +63,13 @@ namespace TelefonskiImenik
                     MessageBox.Show( n.ChildNodes[0].InnerText.ToString() + ":" + n.ChildNodes[1].InnerText.ToString());
                 }
             }
+        }
+
+        private void pretragaImenikaToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Forms.frmImenikPretraga frm = new Forms.frmImenikPretraga();
+            frm.MdiParent = this;
+            frm.Show();
         }
     }
 }
