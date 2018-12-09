@@ -829,10 +829,19 @@ namespace TelImenikWebScraper.Classess
                     string osobaKucniBroj = "";
                     string osobaPunaAdresa = "";
                     string[] oip = imePrezime.Split(' ');
-                    if (oip != null && oip.Length == 2)
+                    if (oip != null && oip.Length >= 2)
                     {
                         osobaIme = oip[0].ToString();
                         osobaPrezime = oip[1].ToString();
+                        if (oip.Length == 3)
+                        {
+                            osobaPrezime = " " + oip[2].ToString();
+                        }
+
+                        if (oip.Length == 4)
+                        {
+                            osobaPrezime = " " + oip[3].ToString();
+                        }
                     }
                     HtmlAgilityPack.HtmlNodeCollection htmlNodesOsobaAdresa = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa_detalj ')]");
                     if (htmlNodesOsobaAdresa != null && htmlNodesOsobaAdresa.Count > 0)
