@@ -71,5 +71,30 @@ namespace TelefonskiImenik
             frm.MdiParent = this;
             frm.Show();
         }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            string contents = File.ReadAllText(@"C:\Users\Bruno\Desktop\test2.txt");
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(contents);
+            //HtmlAgilityPack.HtmlNodeCollection rows = doc.DocumentNode.SelectNodes("//td[@class='c_32']");
+            //foreach (HtmlNode n in rows)
+            //{
+            //    //if (n.ChildNodes[4].InnerText.ToString().Contains("elite proxy"))
+            //    //{
+            //    //    MessageBox.Show(n.ChildNodes[0].InnerText.ToString() + ":" + n.ChildNodes[1].InnerText.ToString());
+            //    //}
+            //}
+                HtmlAgilityPack.HtmlNodeCollection temRezPretrage = doc.DocumentNode.SelectNodes("//td[@class='c_32']");
+                foreach (HtmlNode n in temRezPretrage)
+                {
+                    if (n != null && n.InnerHtml.Contains("PRONA") && n.InnerHtml.Contains("PRIBLI") && n.InnerHtml.Contains("REZULTATA"))
+                    {
+                        
+                    }
+
+                }
+            
+        }
     }
 }
