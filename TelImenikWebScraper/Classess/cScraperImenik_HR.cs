@@ -142,12 +142,33 @@ namespace TelImenikWebScraper.Classess
                     }
                     else
                     {
-                        if (_proxyServerList != null && _proxyServerList.Count == 0 && _usedProxyServerList != null && _usedProxyServerList.Count != 0)
+                        if (_proxyServerList == null)
                         {
-                            _proxyServerList.AddRange(_usedProxyServerList);
-                            _usedProxyServerList.Clear();
-                            proxyServer = _proxyServerList[0].ToString();
-                            _proxyServerList.RemoveAt(0);
+                            _proxyServerList = new List<string>();
+                            _usedProxyServerList = new List<string>();
+                        }
+
+                        if (_proxyServerList.Count == 0)
+                        {
+                            lock (_proxyServerListFromWeb)
+                            {
+                                lock (_usedproxyServerListFromWeb)
+                                {
+                                    Console.WriteLine("proxyServer list --> COUNT == 0 --> redirecting to web list proxy server!");
+                                    this._loadProxyServerFromWeb = false;
+                                    if (this._proxyServerListFromWeb == null)
+                                    {
+                                        this._proxyServerListFromWeb = new List<string>();
+                                        this._usedproxyServerListFromWeb = new List<string>();
+                                    }
+
+                                    if (this._proxyServerListFromWeb.Count == 0)
+                                    {
+                                        fillProxyServerDirectlyFromWebFreeProxy(getUserAgent());
+                                    }
+                                    proxyServer = getProxyServerFromExistingListFromWeb();
+                                }
+                            }
                         }
                     }
                 }
@@ -174,15 +195,22 @@ namespace TelImenikWebScraper.Classess
                     }
                     else
                     {
-                        _proxyServerListFromWeb = new List<string>();
-                        getProxyServerFromExistingListFromWeb();
-                        _usedproxyServerListFromWeb = new List<string>();
+                        if (_proxyServerListFromWeb == null)
+                        {
+                            _proxyServerListFromWeb = new List<string>();
+                            _usedproxyServerListFromWeb = new List<string>();
+                        }
+                        if (_proxyServerListFromWeb.Count == 0)
+                        {
+                            fillProxyServerDirectlyFromWebFreeProxy(getUserAgent());
+                        }
+                        proxyServer = _proxyServerListFromWeb[0].ToString();
+                        _proxyServerListFromWeb.RemoveAt(0);
                     }
                 }
             }
             return proxyServer;
         }
-
 
         private string getProxyServer()
         {
@@ -269,8 +297,6 @@ namespace TelImenikWebScraper.Classess
             }
             Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + " --> FILLING PROXY LIST FROM  https://free-proxy-list.net --> DONE!");
         }
-
-        
 
         #endregion
 
@@ -462,7 +488,10 @@ namespace TelImenikWebScraper.Classess
             loadUserAgentListFromFile();
             loadProxyServerListFromFile();
             string agent = getUserAgent();
-            fillProxyServerDirectlyFromWebFreeProxy(agent);
+            if (_loadProxyServerFromWeb)
+            {
+                fillProxyServerDirectlyFromWebFreeProxy(agent);
+            }
     }
 
         public void Start()
@@ -683,239 +712,270 @@ namespace TelImenikWebScraper.Classess
             }
         }
 
-        private void snimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies, string proxyIP, string userAgent, int requestTimeout, ref bool IsCaptcha)
+        private string GetResponseFromServerForOsoba(string linkOsobaTelBroj, CookieCollection cookies, string proxyIP, string userAgent, int requestTimeout )
+        {
+            string responseFromServer = "";
+
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(this._link.Replace("/imenik", "") + System.Web.HttpUtility.UrlEncode(linkOsobaTelBroj).Replace("%2f", "/"));
+            request.Method = "GET";
+            request.ReadWriteTimeout = requestTimeout + 4000; ;
+
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
+            }
+            else
+            {
+                request.UserAgent = userAgent;
+            }
+
+            if (!string.IsNullOrEmpty(proxyIP))
+            {
+                WebProxy wp = new WebProxy(proxyIP);
+                wp.BypassProxyOnLocal = false;
+                request.Timeout = requestTimeout;
+                request.Proxy = wp;
+                request.KeepAlive = false;
+                request.Timeout = requestTimeout + 4000;//System.Threading.Timeout.Infinite;
+                request.ProtocolVersion = HttpVersion.Version10;
+                request.AllowWriteStreamBuffering = false;
+            }
+
+            CookieContainer cc = new CookieContainer();
+            request.CookieContainer = cc;
+            for (int i = 0; i < cookies.Count; i++)
+            {
+                Cookie c = new Cookie();
+                c.Secure = cookies[i].Secure;
+                c.Port = cookies[i].Port;
+                c.Path = cookies[i].Path;
+                c.Name = cookies[i].Name;
+                c.HttpOnly = cookies[i].HttpOnly;
+                c.Expires = cookies[i].Expires;
+                c.Domain = cookies[i].Domain;
+                c.Value = cookies[i].Value;
+                c.Discard = cookies[i].Discard;
+                c.CommentUri = cookies[i].CommentUri;
+                c.Comment = cookies[i].Comment;
+                c.Expired = cookies[i].Expired;
+                c.Version = cookies[i].Version;
+                cc.Add(c);
+            }
+            try
+            {
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                Stream dataStream = response.GetResponseStream();
+                if (dataStream != null)
+                {
+                    StreamReader reader = new StreamReader(dataStream);
+                    responseFromServer = reader.ReadToEnd();
+                    reader.Close();
+                    reader.Dispose();
+                }
+                dataStream.Close();
+                dataStream.Dispose();
+                response.Close();
+                response.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> GetResponseFromServerForOsoba -->" + linkOsobaTelBroj + " --> EXCEPTION!");
+                saveSessionLog(ex);
+            }
+            return responseFromServer;
+        }
+
+        private HtmlAgilityPack.HtmlDocument GetHTMLOsoba(string linkOsobaTelBroj, CookieCollection cookies, ref string proxyIP, ref string userAgent, int requestTimeout)
+        {
+            HtmlAgilityPack.HtmlDocument doc = new HtmlDocument();
+            string responseFromServer = GetResponseFromServerForOsoba(linkOsobaTelBroj, cookies, proxyIP, userAgent, requestTimeout);
+            if (!string.IsNullOrEmpty(responseFromServer))
+            {
+                while
+                (
+                         responseFromServer.Contains("Odmori malo, zaslužio si...")
+                      || responseFromServer.Contains("A connection attempt failed because the connected party did not properly respond after a period of time") 
+                      || responseFromServer.Contains("The operation was canceled.") 
+                      || responseFromServer.Contains("The operation has timed out.") 
+                      || responseFromServer.Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") 
+                      || responseFromServer.Contains("An existing connection was forcibly closed by the remote host") 
+                      || responseFromServer.Contains("The remote server returned an error: (403) Forbidden")
+                 )
+                {
+                    proxyIP = getProxyServer();
+                    userAgent = getUserAgent();
+                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> GetHTMLOsoba -->" + linkOsobaTelBroj + " --> GETTING NEW PROXY!");
+                    responseFromServer = GetResponseFromServerForOsoba(linkOsobaTelBroj, cookies, proxyIP, userAgent, requestTimeout);
+                }
+                doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(responseFromServer);
+            }
+            return doc;
+        }
+
+        private void snimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies, ref string proxyIP, ref string userAgent, int requestTimeout)
         {
             if (id_Ulica != -1 && !string.IsNullOrEmpty(linkOsobaTelBroj) && !string.IsNullOrEmpty(imePrezime))
             {
-                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(this._link.Replace("/imenik", "" ) + System.Web.HttpUtility.UrlEncode(linkOsobaTelBroj).Replace("%2f", "/"));
-                request.Method = "GET";
-                request.ReadWriteTimeout = requestTimeout + 4000; ;
-                if (string.IsNullOrEmpty(userAgent))
+                var doc = GetHTMLOsoba(linkOsobaTelBroj, cookies, ref proxyIP, ref userAgent, requestTimeout);
+                if (doc != null)
                 {
-                    request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
-                }
-                else
-                {
-                    request.UserAgent = userAgent;
-                }
-
-                if (!string.IsNullOrEmpty(proxyIP))
-                {
-                    WebProxy wp = new WebProxy(proxyIP);
-                    wp.BypassProxyOnLocal = false;
-                    request.Timeout = requestTimeout;
-                    request.Proxy = wp;
-                    request.KeepAlive = false;
-                    request.Timeout = requestTimeout + 4000;//System.Threading.Timeout.Infinite;
-                    request.ProtocolVersion = HttpVersion.Version10;
-                    request.AllowWriteStreamBuffering = false;
-                }
-
-                CookieContainer cc = new CookieContainer();
-                request.CookieContainer = cc;
-                for (int i = 0; i < cookies.Count; i++)
-                {
-                    Cookie c = new Cookie();
-                    c.Secure = cookies[i].Secure;
-                    c.Port = cookies[i].Port;
-                    c.Path = cookies[i].Path;
-                    c.Name = cookies[i].Name;
-                    c.HttpOnly = cookies[i].HttpOnly;
-                    c.Expires = cookies[i].Expires;
-                    c.Domain = cookies[i].Domain;
-                    c.Value = cookies[i].Value;
-                    c.Discard = cookies[i].Discard;
-                    c.CommentUri = cookies[i].CommentUri;
-                    c.Comment = cookies[i].Comment;
-                    c.Expired = cookies[i].Expired;
-                    c.Version = cookies[i].Version;
-                    cc.Add(c);
-                }
-                try
-                {
-                    string responseFromServer = "";
-                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                    Stream dataStream = response.GetResponseStream();
-                    if (dataStream != null)
+                    int id_Osoba = -1;
+                    string osobaIme = "";
+                    string osobaPrezime = "";
+                    string osobaNaselje = "";
+                    string osobaPostanskiBroj = "";
+                    string osobaUlica = "";
+                    string osobaKucniBroj = "";
+                    string osobaPunaAdresa = "";
+                    string[] oip = imePrezime.Split(' ');
+                    if (oip != null && oip.Length == 2)
                     {
-                        StreamReader reader = new StreamReader(dataStream);
-                        responseFromServer = reader.ReadToEnd();
-                        reader.Close();
-                        reader.Dispose();
+                        osobaIme = oip[0].ToString();
+                        osobaPrezime = oip[1].ToString();
                     }
-                    dataStream.Close();
-                    dataStream.Dispose();
-                    response.Close();
-                    response.Dispose();
-                    if (!string.IsNullOrEmpty(responseFromServer))
+                    HtmlAgilityPack.HtmlNodeCollection htmlNodesOsobaAdresa = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa_detalj ')]");
+                    if (htmlNodesOsobaAdresa != null && htmlNodesOsobaAdresa.Count > 0)
                     {
-                        if (responseFromServer.Contains("Odmori malo, zaslužio si..."))
+                        string[] osobaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(' ');
+                        if (osobaPodaci != null && osobaPodaci.Length != 0)
                         {
-                            IsCaptcha = true;
-                            saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> responseFromServer IS CAPTCHA  --> REDIRECTING TO ANOTHER PROXY --> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                            try
+                            {
+                                osobaPunaAdresa = htmlNodesOsobaAdresa[0].InnerText.Trim();
+                                osobaPostanskiBroj = osobaPodaci[0].ToString().Replace(",", "");
+                                osobaNaselje = osobaPodaci[1].ToString().Replace(",", "");
+                                osobaUlica = osobaPodaci[2].ToString().Replace(",", "");
+
+                                if (osobaPodaci.Length == 4)
+                                {
+                                    osobaKucniBroj = osobaPodaci[3].ToString();
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                saveSessionLog(ex);
+                            }
                         }
                         else
                         {
-                            var doc = new HtmlAgilityPack.HtmlDocument();
-                            doc.LoadHtml(responseFromServer);
-                            if (doc != null)
-                            {
-                                int id_Osoba = -1;
-                                string osobaIme = "";
-                                string osobaPrezime = "";
-                                string osobaNaselje = "";
-                                string osobaPostanskiBroj = "";
-                                string osobaUlica = "";
-                                string osobaKucniBroj = "";
-                                string osobaPunaAdresa = "";
-                                string[] oip = imePrezime.Split(' ');
-                                if (oip != null && oip.Length == 2)
-                                {
-                                    osobaIme = oip[0].ToString();
-                                    osobaPrezime = oip[1].ToString();
-                                }
-                                HtmlAgilityPack.HtmlNodeCollection htmlNodesOsobaAdresa = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa_detalj ')]");
-                                if (htmlNodesOsobaAdresa != null && htmlNodesOsobaAdresa.Count > 0)
-                                {
-                                    string[] osobaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(' ');
-                                    if (osobaPodaci != null && osobaPodaci.Length != 0)
-                                    {
-                                        try
-                                        {
-                                            osobaPunaAdresa = htmlNodesOsobaAdresa[0].InnerText.Trim();
-                                            osobaPostanskiBroj = osobaPodaci[0].ToString().Replace(",", "");
-                                            osobaNaselje = osobaPodaci[1].ToString().Replace(",", "");
-                                            osobaUlica = osobaPodaci[2].ToString().Replace(",", "");
-
-                                            if (osobaPodaci.Length == 4)
-                                            {
-                                                osobaKucniBroj = osobaPodaci[3].ToString();
-                                            }
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            saveSessionLog(ex);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) -->  string[] osobaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(' ') IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
-                                    }
-                                }
-                                else
-                                {
-                                    saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> htmlNodesOsobaAdresa IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
-                                }
-
-                                HtmlAgilityPack.HtmlNodeCollection htmlNodesTelBrojevi = doc.DocumentNode.SelectNodes("//td[contains(concat(' ', @class, ' '), ' data_tel ')]");
-                                if (htmlNodesTelBrojevi != null && htmlNodesTelBrojevi.Count != 0)
-                                {
-                                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "IMENIK HR --> SnimiOsobu --> SAVING OSOBA /TELEFON TO DATABASE -->" + osobaIme + " " + osobaPrezime );
-                                    using (SqlConnection conn = new SqlConnection(_connectionString))
-                                    {
-                                        try
-                                        {
-                                            conn.Open();
-                                            SqlCommand cmd = new SqlCommand("spOsoba_SnimiOsobu_Insert", conn);
-                                            cmd.CommandType = CommandType.StoredProcedure;
-                                            cmd.Parameters.AddWithValue("@osobaIme", osobaIme);
-                                            cmd.Parameters.AddWithValue("@osobaPrezime", osobaPrezime);
-                                            cmd.Parameters.AddWithValue("@osobaNaselje", osobaNaselje);
-                                            cmd.Parameters.AddWithValue("@osobaPostanskiBroj", osobaPostanskiBroj);
-                                            cmd.Parameters.AddWithValue("@osobaUlica", osobaUlica);
-                                            cmd.Parameters.AddWithValue("@osobaKucniBroj", osobaKucniBroj);
-                                            cmd.Parameters.AddWithValue("@osobaPunaAdresa", osobaPunaAdresa);
-                                            cmd.Parameters.AddWithValue("@id_Ulica", id_Ulica);
-                                            cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
-                                            SqlParameter p = new SqlParameter("@id_Osoba", SqlDbType.Int);
-                                            p.Direction = ParameterDirection.Output;
-                                            cmd.Parameters.Add(p);
-                                            cmd.ExecuteNonQuery();
-                                            id_Osoba = Convert.ToInt32(p.Value);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
-                                        }
-                                        finally
-                                        {
-                                            if (conn.State == ConnectionState.Open)
-                                            {
-                                                conn.Close();
-                                            }
-                                        }
-                                    }
-                                    if (id_Osoba != -1)
-                                    {
-                                        for (int i = 0; i < htmlNodesTelBrojevi.Count; i++)
-                                        {
-                                            using (SqlConnection conn = new SqlConnection(_connectionString))
-                                            {
-                                                try
-                                                {
-                                                    conn.Open();
-                                                    SqlCommand cmd = new SqlCommand("spTelefon_SnimiTelefon_Insert", conn);
-                                                    cmd.CommandType = CommandType.StoredProcedure;
-                                                    cmd.Parameters.AddWithValue("@id_Osoba", id_Osoba);
-                                                    cmd.Parameters.AddWithValue("@PredBroj", htmlNodesTelBrojevi[i].InnerText.Trim().Substring(0, htmlNodesTelBrojevi[i].InnerText.Trim().LastIndexOf(')')).Replace("(", ""));
-                                                    cmd.Parameters.AddWithValue("@Broj", htmlNodesTelBrojevi[i].InnerText.Trim().Substring(htmlNodesTelBrojevi[i].InnerText.Trim().LastIndexOf(')')).Replace(")", "").Trim().Replace(" ", ""));
-                                                    cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
-                                                    cmd.ExecuteNonQuery();
-                                                }
-                                                catch (Exception ex)
-                                                {
-                                                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
-                                                }
-                                                finally
-                                                {
-                                                    if (conn.State == ConnectionState.Open)
-                                                    {
-                                                        conn.Close();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> id_Osoba == -1!!!! --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
-                                    }
-                                }
-                                else
-                                {
-                                    saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> htmlNodesTelBrojevi IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
-                                }
-                            }
-                            else
-                            {
-                                saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> responseFromServer IS NULL --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
-                            }
+                            saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) -->  string[] osobaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(' ') IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
                         }
                     }
                     else
                     {
-                        saveSessionLog((!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1")  + "<--> IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> doc.LoadHtml(responseFromServer) IS NULL --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                        saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> htmlNodesOsobaAdresa IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
                     }
-                }
-                catch (Exception ex)
-                {
-                    if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host"))
+
+                    HtmlAgilityPack.HtmlNodeCollection htmlNodesTelBrojevi = doc.DocumentNode.SelectNodes("//td[contains(concat(' ', @class, ' '), ' data_tel ')]");
+                    if (htmlNodesTelBrojevi != null && htmlNodesTelBrojevi.Count != 0)
                     {
-                        IsCaptcha = true;
+                        Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + "IMENIK HR --> SnimiOsobu --> SAVING OSOBA /TELEFON TO DATABASE -->" + osobaIme + " " + osobaPrezime);
+                        using (SqlConnection conn = new SqlConnection(_connectionString))
+                        {
+                            try
+                            {
+                                conn.Open();
+                                SqlCommand cmd = new SqlCommand("spOsoba_SnimiOsobu_Insert", conn);
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@osobaIme", osobaIme);
+                                cmd.Parameters.AddWithValue("@osobaPrezime", osobaPrezime);
+                                cmd.Parameters.AddWithValue("@osobaNaselje", osobaNaselje);
+                                cmd.Parameters.AddWithValue("@osobaPostanskiBroj", osobaPostanskiBroj);
+                                cmd.Parameters.AddWithValue("@osobaUlica", osobaUlica);
+                                cmd.Parameters.AddWithValue("@osobaKucniBroj", osobaKucniBroj);
+                                cmd.Parameters.AddWithValue("@osobaPunaAdresa", osobaPunaAdresa);
+                                cmd.Parameters.AddWithValue("@id_Ulica", id_Ulica);
+                                cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                                SqlParameter p = new SqlParameter("@id_Osoba", SqlDbType.Int);
+                                p.Direction = ParameterDirection.Output;
+                                cmd.Parameters.Add(p);
+                                cmd.ExecuteNonQuery();
+                                id_Osoba = Convert.ToInt32(p.Value);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
+                            }
+                            finally
+                            {
+                                if (conn.State == ConnectionState.Open)
+                                {
+                                    conn.Close();
+                                }
+                            }
+                        }
+                        if (id_Osoba != -1)
+                        {
+                            for (int i = 0; i < htmlNodesTelBrojevi.Count; i++)
+                            {
+                                using (SqlConnection conn = new SqlConnection(_connectionString))
+                                {
+                                    try
+                                    {
+                                        conn.Open();
+                                        SqlCommand cmd = new SqlCommand("spTelefon_SnimiTelefon_Insert", conn);
+                                        cmd.CommandType = CommandType.StoredProcedure;
+                                        cmd.Parameters.AddWithValue("@id_Osoba", id_Osoba);
+                                        cmd.Parameters.AddWithValue("@PredBroj", htmlNodesTelBrojevi[i].InnerText.Trim().Substring(0, htmlNodesTelBrojevi[i].InnerText.Trim().LastIndexOf(')')).Replace("(", ""));
+                                        cmd.Parameters.AddWithValue("@Broj", htmlNodesTelBrojevi[i].InnerText.Trim().Substring(htmlNodesTelBrojevi[i].InnerText.Trim().LastIndexOf(')')).Replace(")", "").Trim().Replace(" ", ""));
+                                        cmd.Parameters.AddWithValue("@id_WebScraperSession", this._id_WebScraperSession);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
+                                    }
+                                    finally
+                                    {
+                                        if (conn.State == ConnectionState.Open)
+                                        {
+                                            conn.Close();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> id_Osoba == -1!!!! --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                        }
                     }
                     else
                     {
-                        Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
-                        saveSessionLog(ex);
+                        saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> htmlNodesTelBrojevi IS NULL OR COUNT == 0 --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                    }
+                }
+                else
+                {
+                    saveSessionLog("IMENIK HR --> SnimiOsobu(int id_Ulica, string imePrezime, string linkOsobaTelBroj, CookieCollection cookies ) --> responseFromServer IS NULL --> " + "--> id_Ulica=" + id_Ulica.ToString() + ", imePrezime=" + imePrezime + "linkOsobaTelBroj=" + linkOsobaTelBroj, false);
+                }
+            }
+        }
+
+        private void snimiOsobeFirme(HtmlNodeCollection nodes, int id_Ulica, CookieCollection cookies, ref string proxyIP, ref string userAgent, int requestTimeout )
+        {
+            if (nodes != null)
+            {
+                for (int i = 0; i < nodes.Count; i++)
+                {
+                    if (nodes[i].ParentNode.ParentNode.InnerHtml.Contains("POSLOVNI"))
+                    {
+                        //snimiFirmu(id_Ulica, nodes[i].ChildNodes[1].Attributes[0].Value.ToString(), nodes[i].ChildNodes[1].Attributes[1].Value.ToString(), (CookieCollection)t.Item1, ref proxyIP, userAgent, this._timeBetweenHTTPRequests_MS);
+                    }
+                    else
+                    {
+                       snimiOsobu(id_Ulica, nodes[i].ChildNodes[1].Attributes[0].Value.ToString(), nodes[i].ChildNodes[1].Attributes[1].Value.ToString(), cookies, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS);  
                     }
                 }
             }
         }
 
-        private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link, CookieCollection cookies, string proxyIP, string userAgent, int requestTimeout, ref bool IsCaptcha)
+        private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link, CookieCollection cookies, ref string proxyIP, ref string userAgent, int requestTimeout, ref bool IsCaptcha, ref bool useGradInsteadMjesto, ref int rezultatPretrage)
         {
             Tuple<CookieCollection, HtmlNodeCollection> t = null;
             IsCaptcha = false;
+            string log = "";
             try
             {
                 HtmlNodeCollection nodes = new HtmlNodeCollection(null);
@@ -976,25 +1036,39 @@ namespace TelImenikWebScraper.Classess
                     reader.Close();
                     reader.Dispose();
                 }
-
-                if (!string.IsNullOrEmpty(responseFromServer) && !responseFromServer.Contains("Odmori malo, zaslužio si..."))
+                
+                if (!string.IsNullOrEmpty(responseFromServer))
                 {
-                    var doc = new HtmlAgilityPack.HtmlDocument();
-                    doc.LoadHtml(responseFromServer);
-                    nodes = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa ')]");
-                    t = new Tuple<CookieCollection, HtmlNodeCollection>(response.Cookies, nodes);
-                    IsCaptcha = false;
-                }
-                else if (!string.IsNullOrEmpty(responseFromServer) && responseFromServer.Contains("Odmori malo, zaslužio si..."))
-                {
-                    IsCaptcha = true;
-                    saveSessionLog("IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer CAPTCHA --> link" + link, false);
+                    if (responseFromServer.Contains("Odmori malo, zaslužio si..."))
+                    {
+                        IsCaptcha = true;
+                        log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer CAPTCHA --> link" + link;
+                    }
+                    else if (responseFromServer.Contains("Nije pronađen niti jedan rezultat za upit") || responseFromServer.Contains("niti jedan rezultat za upit") )
+                    {
+                        log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer: Nije pronađen niti jedan rezultat za upit --> link" + link;
+                        useGradInsteadMjesto = !useGradInsteadMjesto;
+                        rezultatPretrage = -1;
+                    }
+                    else if (responseFromServer.Contains("PRONAĐENO PRIBLIŽNO<strong>") && responseFromServer.Contains("</strong> REZULTATA"))
+                    {
+                        var doc = new HtmlAgilityPack.HtmlDocument();
+                        doc.LoadHtml(responseFromServer);
+                        nodes = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa ')]");
+                        t = new Tuple<CookieCollection, HtmlNodeCollection>(response.Cookies, nodes);
+                        rezultatPretrage = 1;
+                        IsCaptcha = false;
+                    }
+                    else
+                    {
+                        log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> UNKNOWN responseFromServer: " + responseFromServer + " --> link" + link;
+                    }
                 }
                 else
                 {
-                    IsCaptcha = false;
-                    saveSessionLog("IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer empty --> link" + link, false);
+                    log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer EMPTY STRING --> link" + link;
                 }
+                
                 dataStream.Close();
                 dataStream.Dispose();
                 response.Close();
@@ -1003,46 +1077,70 @@ namespace TelImenikWebScraper.Classess
             catch (Exception ex)
             {
                 IsCaptcha = false;
-                if (ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host") || ex.Message.ToString().Contains("The remote server returned an error: (403) Forbidden") )
+                if 
+                (
+                       ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") 
+                    || ex.Message.ToString().Contains("The operation was canceled.") || ex.Message.ToString().Contains("The operation has timed out.") 
+                    || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") 
+                    || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host") 
+                    || ex.Message.ToString().Contains("The remote server returned an error: (403) Forbidden")
+                    || ex.Message.ToString().Contains("An error occurred while sending the request. The server returned an invalid or unrecognized response")
+                )
                 {
+                    log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer PROXY EXCEPTION --> link" + link + Environment.NewLine + ex.Message.ToString();
                     IsCaptcha = true;
                 }
                 else if (ex.Message.ToString() != "The remote server returned an error: (500) Internal Server Error.")
                 {
+                    log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer TARGET SERVER EXCEPTION --> link" + link + Environment.NewLine + ex.Message.ToString();
                     saveSessionLog(ex);
                 }
-                
                 else
                 {
-                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + ex.Message.ToString());
+                    log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer TARGET SERVER UNHANDLED EXCEPTION --> link" + link + Environment.NewLine + ex.Message.ToString() + ex.Message.ToString());
+                    IsCaptcha = true;
                 }
+            }
+            if (!string.IsNullOrEmpty(log))
+            {
+                saveSessionLog(log, false);
             }
             return t;
         }
 
-        private void snimiOsobeFirme(HtmlNodeCollection nodes, int id_Ulica, CookieCollection cookies, string proxyIP, string userAgent, int requestTimeout, ref bool IsCaptcha)
+        private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjestoWithProxyServers(ref string proxyIP, ref string userAgent, ref int rezulatPretrage, string ulicaNaziv, string mjestoNaziv, string gradNaziv, int currentResultsPage)
         {
-            if (nodes != null)
+            Tuple<CookieCollection, HtmlNodeCollection> t = new Tuple<CookieCollection, HtmlNodeCollection>(null, null);
+            bool useGradInsteadMjesto = false;
+            bool isCaptcha = false;
+            int rezultatPretrage = 0;
+
+            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage);
+
+            if (isCaptcha == false && useGradInsteadMjesto)
             {
-                for (int i = 0; i < nodes.Count; i++)
+                t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage);
+                while (isCaptcha == true && proxyIP != "")
                 {
-                    if (nodes[i].ParentNode.ParentNode.InnerHtml.Contains("POSLOVNI"))
-                    {
-                        //snimiFirmu(id_Ulica, nodes[i].ChildNodes[1].Attributes[0].Value.ToString(), nodes[i].ChildNodes[1].Attributes[1].Value.ToString(), (CookieCollection)t.Item1, ref proxyIP, userAgent, this._timeBetweenHTTPRequests_MS);
-                    }
-                    else
-                    {
-                        if (!IsCaptcha)
-                        {
-                            snimiOsobu(id_Ulica, nodes[i].ChildNodes[1].Attributes[0].Value.ToString(), nodes[i].ChildNodes[1].Attributes[1].Value.ToString(), cookies, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref IsCaptcha);
-                        }
-                        else
-                        {
-                            i = nodes.Count - 1;
-                        }
-                    }
+                    proxyIP = getProxyServer();
+                    userAgent = getUserAgent();
+                    t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage);
                 }
             }
+            int failSafeCounter = 100;
+            while (isCaptcha == true && proxyIP != "")
+            {
+                if (failSafeCounter == 0)
+                {
+                    saveSessionLog("GetUsersForUlicaMjestoWithProxyServers WHILE failSafeCounter == 0!", false);
+                    break;
+                }
+                proxyIP = getProxyServer();
+                userAgent = getUserAgent();
+                t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + (useGradInsteadMjesto == true ? System.Web.HttpUtility.UrlEncode(gradNaziv) : System.Web.HttpUtility.UrlEncode(mjestoNaziv)) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage);
+                failSafeCounter--;
+            }
+            return t;
         }
 
         private void processUlicaMjesto()
@@ -1058,6 +1156,7 @@ namespace TelImenikWebScraper.Classess
                 int id_Ulica = -1;
                 string mjestoNaziv = "";
                 string ulicaNaziv = "";
+                string gradNaziv = "";
 
                 lock (_tblNeprocesiraneUlice)
                 {
@@ -1067,78 +1166,35 @@ namespace TelImenikWebScraper.Classess
                         id_Ulica = Convert.ToInt32(_tblNeprocesiraneUlice.Rows[_currentRow]["id_Ulica"]);
                         mjestoNaziv = _tblNeprocesiraneUlice.Rows[_currentRow]["NaseljeNaziv"].ToString();
                         ulicaNaziv = _tblNeprocesiraneUlice.Rows[_currentRow]["UlicaNaziv"].ToString();
+                        gradNaziv = _tblNeprocesiraneUlice.Rows[_currentRow]["GradNaziv"].ToString();
                     }
                 }
-                string log = (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name ) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1" ) + "proxy: " + proxyIP + "user agent:" + " --> id_Ulica = " + id_Ulica.ToString() + ", mjesto: " + mjestoNaziv + ", ulica: " + ulicaNaziv;
+                string log = (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + " --> proxy: " + proxyIP + ", user agent:" + userAgent + " --> id_Ulica = " + id_Ulica.ToString() + ", mjesto: " + mjestoNaziv + "/" + gradNaziv + ", ulica: " + ulicaNaziv;
                 Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + log);
                 bool isUlicaProcessed = false;
                 if (id_Ulica != -1)
                 {
-                    int currentResultsPage = 1;   
-                    if (!string.IsNullOrEmpty(this._link))
+                    int rezultatPretrage = 1;
+                    Tuple<CookieCollection, HtmlNodeCollection> t = GetUsersForUlicaMjestoWithProxyServers(ref proxyIP, ref userAgent, ref rezultatPretrage, ulicaNaziv, mjestoNaziv, gradNaziv, 1);
+                    if (rezultatPretrage != -1 && t != null)
                     {
-                        bool isCaptcha = false;
-                        int ulicaCounter = 1;
-                        Tuple<CookieCollection, HtmlNodeCollection> t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                        while (isCaptcha == true && proxyIP != "")
+                        if ((HtmlNodeCollection)t.Item2 != null)
                         {
-                            proxyIP = getProxyServer();
-                            userAgent = getUserAgent();
-                            ulicaCounter++;
-                            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                            Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + ulicaNaziv + " " + ulicaCounter.ToString() + " --> proxy IP: " + proxyIP);
-
+                            snimiOsobeFirme((HtmlNodeCollection)t.Item2, id_Ulica, (CookieCollection)t.Item1, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS);
                         }
-                        if (!string.IsNullOrEmpty(proxyIP))
+                        rezultatPretrage = rezultatPretrage / 20;
+                        for (int i = 2; i <= rezultatPretrage; i++)
                         {
-                            if (t != null)
+                            t = GetUsersForUlicaMjestoWithProxyServers(ref proxyIP, ref userAgent, ref rezultatPretrage, ulicaNaziv, mjestoNaziv, gradNaziv, i);
+                            if (t != null && t.Item2 != null && ((HtmlNodeCollection)t.Item2).Count != 0)
                             {
-                                HtmlNodeCollection nodes = (HtmlNodeCollection)t.Item2;
-                                if (nodes != null && nodes.Count != 0)
-                                {
-                                    while (nodes != null && nodes.Count != 0)
-                                    {
-                                        snimiOsobeFirme(nodes, id_Ulica, (CookieCollection)t.Item1, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                                        while (isCaptcha == true && proxyIP != "")
-                                        {
-                                            proxyIP = getProxyServer();
-                                            userAgent = getUserAgent();
-                                            currentResultsPage = 1;
-                                            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", (t != null && t.Item1 != null ? (CookieCollection)t.Item1 : null), proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                                        }
-                                        currentResultsPage++;
-                                        t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                                        while (isCaptcha == true && proxyIP != "")
-                                        {
-                                            proxyIP = getProxyServer();
-                                            userAgent = getUserAgent();
-                                            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/sve/sve/sve/vaznost/ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", (t != null && t.Item1 != null ? (CookieCollection)t.Item1 : null), proxyIP, userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha);
-                                        }
-                                        if (t != null && t.Item2 != null)
-                                        {
-                                            nodes = (HtmlNodeCollection)t.Item2;
-                                        }
-                                        else
-                                        {
-                                            nodes = null;
-                                        }
-                                    }
-                                }
+                                snimiOsobeFirme((HtmlNodeCollection)t.Item2, id_Ulica, (CookieCollection)t.Item1, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS);
                             }
                             else
                             {
                                 saveSessionLog((!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + "<--> IMENIKHR -->  Tuple<CookieCollection, HtmlNodeCollection> t = NULL -- > LINK -->" + this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + ulicaNaziv + "%20mjesto:" + mjestoNaziv + ".html --> log: " + log, false);
                             }
-                            isUlicaProcessed = true;
                         }
-                        else
-                        {
-                            _currentRow--;
-                        }
-                    }
-                    else
-                    {
-                        saveSessionLog((!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + "<--> IMENIKHR --> id_Ulica == -1 -->" + log, false);
                     }
                     if (isUlicaProcessed)
                     {
@@ -1155,7 +1211,8 @@ namespace TelImenikWebScraper.Classess
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + exceptionToString(ex));
+                                string exc = exceptionToString(ex);
+                                saveSessionLog((!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + "<--> IMENIKHR --> id_Ulica == -1 -->" + exc, true);
                             }
                             finally
                             {
@@ -1166,8 +1223,8 @@ namespace TelImenikWebScraper.Classess
                             }
                         }
                     }
+                    System.Threading.Thread.Sleep(_timeBetweenHTTPRequests_MS);
                 }
-                System.Threading.Thread.Sleep(_timeBetweenHTTPRequests_MS);
             }
             while (_currentRow < _totalRows - 1);
 
