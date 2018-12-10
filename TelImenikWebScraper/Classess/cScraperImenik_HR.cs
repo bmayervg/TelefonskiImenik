@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Cache;
+using System.Text;
 
 namespace TelImenikWebScraper.Classess
 {
@@ -719,6 +720,7 @@ namespace TelImenikWebScraper.Classess
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(this._link.Replace("/imenik", "") + System.Web.HttpUtility.UrlEncode(linkOsobaTelBroj).Replace("%2f", "/"));
             request.Method = "GET";
             request.ReadWriteTimeout = requestTimeout + 5000; ;
+            request.KeepAlive = false;
 
             if (string.IsNullOrEmpty(userAgent))
             {
@@ -735,7 +737,6 @@ namespace TelImenikWebScraper.Classess
                 wp.BypassProxyOnLocal = false;
                 request.Timeout = requestTimeout;
                 request.Proxy = wp;
-                request.KeepAlive = false;
                 request.Timeout = requestTimeout + 5000;//System.Threading.Timeout.Infinite;
                 request.ProtocolVersion = HttpVersion.Version10;
                 request.AllowWriteStreamBuffering = false;
@@ -764,18 +765,38 @@ namespace TelImenikWebScraper.Classess
             try
             {
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                Stream dataStream = response.GetResponseStream();
-                if (dataStream != null)
+                var buffer = new byte[180000];
+                using (Stream sm = response.GetResponseStream())
                 {
-                    StreamReader reader = new StreamReader(dataStream);
-                    responseFromServer = reader.ReadToEnd();
-                    reader.Close();
-                    reader.Dispose();
+                    int totalBytesRead = 0;
+                    int bytesRead;
+                    do
+                    {
+                        if (sm.CanRead)
+                        {
+                            bytesRead = sm.Read(buffer, totalBytesRead, 180000 - totalBytesRead);
+                            totalBytesRead += bytesRead;
+                        }
+                        else
+                        {
+                            bytesRead = 0;
+                        }
+                    } while (bytesRead != 0 );
                 }
-                dataStream.Close();
-                dataStream.Dispose();
-                response.Close();
-                response.Dispose();
+                responseFromServer = Encoding.Default.GetString(buffer);
+
+                try
+                {
+                    response.Close();
+                    response.Dispose();
+                }
+                catch (Exception rspEX)
+                { }
+                finally
+                {
+                    response = null;
+                    buffer = null;
+                }
             }
             catch (Exception ex)
             {
@@ -1035,17 +1056,28 @@ namespace TelImenikWebScraper.Classess
                     }
                 }
                 string responseFromServer = "";
-
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                Stream dataStream = response.GetResponseStream();
-                if (dataStream != null)
+                var buffer = new byte[180000];
+                using (Stream sm = response.GetResponseStream())
                 {
-                    StreamReader reader = new StreamReader(dataStream);
-                    responseFromServer = reader.ReadToEnd();
-                    reader.Close();
-                    reader.Dispose();
+                    int totalBytesRead = 0;
+                    int bytesRead;
+                    do
+                    {
+                        if (sm.CanRead)
+                        {
+                            bytesRead = sm.Read(buffer, totalBytesRead, 180000 - totalBytesRead);
+                            totalBytesRead += bytesRead;
+                        }
+                        else
+                        {
+                            bytesRead = 0;
+                        }
+                    } while (bytesRead != 0);
+                    request.Abort();
                 }
-                
+                responseFromServer = Encoding.Default.GetString(buffer);
+                buffer = null;
                 if (!string.IsNullOrEmpty(responseFromServer))
                 {
                     if (responseFromServer.Contains("Odmori malo, zaslužio si..."))
@@ -1053,13 +1085,13 @@ namespace TelImenikWebScraper.Classess
                         IsCaptcha = true;
                         log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer CAPTCHA --> link" + link;
                     }
-                    else if (responseFromServer.Contains("Nije pronađen niti jedan rezultat za upit") || responseFromServer.Contains("niti jedan rezultat za upit") )
+                    else if (responseFromServer.Contains("Nije pronađen niti jedan rezultat za upit") || responseFromServer.Contains("niti jedan rezultat za upit") || responseFromServer.Contains("niti jedan") )
                     {
                         log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer: Nije pronađen niti jedan rezultat za upit --> link" + link;
                         useGradInsteadMjesto = !useGradInsteadMjesto;
-                        rezultatPretrage = -1;
+                        rezultatPretrage = -666;
                     }
-                    else if (responseFromServer.Contains("PRONAĐENO PRIBLIŽNO"))
+                    else if (responseFromServer.Contains("PRONAĐENO PRIBLIŽNO") || responseFromServer.Contains("PRONAĐENO UKUPNO"))
                     {
                         var doc = new HtmlAgilityPack.HtmlDocument();
                         doc.LoadHtml(responseFromServer);
@@ -1070,7 +1102,7 @@ namespace TelImenikWebScraper.Classess
                             HtmlAgilityPack.HtmlNodeCollection temRezPretrage = doc.DocumentNode.SelectNodes("//td[@class='c_32']");
                             foreach (HtmlNode n in temRezPretrage)
                             {
-                                if (n != null && n.InnerHtml.Contains("PRONA") && n.InnerHtml.Contains("PRIBLI") && n.InnerHtml.Contains("REZULTATA"))
+                                if (n != null && n.InnerHtml.Contains("PRONA") && ( n.InnerHtml.Contains("PRIBLI") || n.InnerHtml.Contains("UKUPNO")) && n.InnerHtml.Contains("REZULTATA"))
                                 {
                                     if (n.ChildNodes != null && n.ChildNodes.Count == 3 && !string.IsNullOrEmpty(n.ChildNodes[1].InnerHtml.ToString()))
                                     {
@@ -1091,11 +1123,18 @@ namespace TelImenikWebScraper.Classess
                 {
                     log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer EMPTY STRING --> link" + link;
                 }
-                
-                dataStream.Close();
-                dataStream.Dispose();
-                response.Close();
-                response.Dispose();
+                try
+                {
+                    response.Close();
+                    response.Dispose();
+                }
+                catch (Exception rspEX)
+                { }
+                finally
+                {
+                    response = null;
+                }
+
             }
             catch (Exception ex)
             {
@@ -1137,41 +1176,41 @@ namespace TelImenikWebScraper.Classess
             Tuple<CookieCollection, HtmlNodeCollection> t = new Tuple<CookieCollection, HtmlNodeCollection>(null, null);
             bool useGradInsteadMjesto = false;
             bool isCaptcha = false;
-            int rezultatPretrage = 0;
-
-            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage, currentResultsPage);
-
-            if (isCaptcha == false && useGradInsteadMjesto)
+            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(mjestoNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezulatPretrage, currentResultsPage);
+            if (rezulatPretrage != -666)
             {
-                t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage, currentResultsPage);
-                while (isCaptcha == true && proxyIP != "")
+                if (isCaptcha == false && useGradInsteadMjesto)
                 {
-                    proxyIP = getProxyServer();
-                    userAgent = getUserAgent();
-                    t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage, currentResultsPage);
-                }
-            }
-            while (isCaptcha == true && proxyIP != "")
-            {
-                proxyIP = getProxyServer();
-                userAgent = getUserAgent();
-                if (!string.IsNullOrEmpty(proxyIP))
-                {
-                    t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + (useGradInsteadMjesto == true ? System.Web.HttpUtility.UrlEncode(gradNaziv) : System.Web.HttpUtility.UrlEncode(mjestoNaziv)) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage, currentResultsPage);
-                    if (t == null && useGradInsteadMjesto == false)
-                    {
-                        t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage, currentResultsPage);
-                    }
+                    t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezulatPretrage, currentResultsPage);
                     while (isCaptcha == true && proxyIP != "")
                     {
                         proxyIP = getProxyServer();
                         userAgent = getUserAgent();
-                        t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezultatPretrage, currentResultsPage);
+                        t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezulatPretrage, currentResultsPage);
                     }
                 }
-                else
+                while (rezulatPretrage != -666 && isCaptcha == true && proxyIP != "")
                 {
-                    saveSessionLog("PROXY IP NULL!", false);
+                    proxyIP = getProxyServer();
+                    userAgent = getUserAgent();
+                    if (!string.IsNullOrEmpty(proxyIP))
+                    {
+                        t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + (useGradInsteadMjesto == true ? System.Web.HttpUtility.UrlEncode(gradNaziv) : System.Web.HttpUtility.UrlEncode(mjestoNaziv)) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezulatPretrage, currentResultsPage);
+                        if (t == null && useGradInsteadMjesto == false)
+                        {
+                            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezulatPretrage, currentResultsPage);
+                        }
+                        while (isCaptcha == true && proxyIP != "")
+                        {
+                            proxyIP = getProxyServer();
+                            userAgent = getUserAgent();
+                            t = GetUsersForUlicaMjesto(this._link + "/trazi/" + currentResultsPage.ToString() + "/" + "ulica:" + System.Web.HttpUtility.UrlEncode(ulicaNaziv) + "%20mjesto:" + System.Web.HttpUtility.UrlEncode(gradNaziv) + ".html", null, ref proxyIP, ref userAgent, this._timeBetweenHTTPRequests_MS, ref isCaptcha, ref useGradInsteadMjesto, ref rezulatPretrage, currentResultsPage);
+                        }
+                    }
+                    else
+                    {
+                        saveSessionLog("PROXY IP NULL!", false);
+                    }
                 }
             }
             return t;
@@ -1183,8 +1222,11 @@ namespace TelImenikWebScraper.Classess
             {
                 _threadsRunningCount++;
             }
+
             string proxyIP = getProxyServer();
             string userAgent = getUserAgent();
+            bool isUlicaProcessed = false;
+
             do
             {
                 int id_Ulica = -1;
@@ -1196,7 +1238,14 @@ namespace TelImenikWebScraper.Classess
                 {
                     if (_currentRow < _totalRows - 1)
                     {
-                        _currentRow++;
+                        if (isUlicaProcessed)
+                        {
+                            _currentRow++;
+                        }
+                        if (_currentRow == -1)
+                        {
+                            _currentRow++;
+                        }
                         id_Ulica = Convert.ToInt32(_tblNeprocesiraneUlice.Rows[_currentRow]["id_Ulica"]);
                         mjestoNaziv = _tblNeprocesiraneUlice.Rows[_currentRow]["NaseljeNaziv"].ToString();
                         ulicaNaziv = _tblNeprocesiraneUlice.Rows[_currentRow]["UlicaNaziv"].ToString();
@@ -1205,7 +1254,6 @@ namespace TelImenikWebScraper.Classess
                 }
                 string log = (!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + " --> proxy: " + proxyIP + ", user agent:" + userAgent + " --> id_Ulica = " + id_Ulica.ToString() + ", mjesto: " + mjestoNaziv + "/" + gradNaziv + ", ulica: " + ulicaNaziv;
                 Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> " + log);
-                bool isUlicaProcessed = false;
                 if (id_Ulica != -1)
                 {
                     int rezultatPretrage = 1;
@@ -1229,6 +1277,11 @@ namespace TelImenikWebScraper.Classess
                                 saveSessionLog((!string.IsNullOrEmpty(System.Threading.Thread.CurrentThread.Name) ? System.Threading.Thread.CurrentThread.Name.ToString() : "t_nr_1") + "<--> IMENIKHR -->  Tuple<CookieCollection, HtmlNodeCollection> t = NULL -- > LINK -->" + this._link + "/trazi/" + i.ToString() + "/" + "ulica:" + ulicaNaziv + "%20mjesto:" + mjestoNaziv + ".html --> log: " + log, false);
                             }
                         }
+                        isUlicaProcessed = true;
+                    }
+                    else if (rezultatPretrage == -666)
+                    {
+                        isUlicaProcessed = true;
                     }
                     if (isUlicaProcessed)
                     {
