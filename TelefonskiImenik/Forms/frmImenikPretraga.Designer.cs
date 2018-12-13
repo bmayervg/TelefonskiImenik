@@ -45,9 +45,10 @@
             this.Ulica = new System.Windows.Forms.Label();
             this.btnPretrazi = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.chkCheckS = new System.Windows.Forms.CheckBox();
             this.btnExport = new System.Windows.Forms.Button();
             this.dgvRezultati = new System.Windows.Forms.DataGridView();
-            this.chkCheckS = new System.Windows.Forms.CheckBox();
+            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvRezultati)).BeginInit();
@@ -201,6 +202,7 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.linkLabel1);
             this.groupBox2.Controls.Add(this.chkCheckS);
             this.groupBox2.Controls.Add(this.btnExport);
             this.groupBox2.Controls.Add(this.dgvRezultati);
@@ -210,6 +212,17 @@
             this.groupBox2.TabIndex = 1;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Rezultati pretrage";
+            // 
+            // chkCheckS
+            // 
+            this.chkCheckS.AutoSize = true;
+            this.chkCheckS.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.chkCheckS.Location = new System.Drawing.Point(174, 28);
+            this.chkCheckS.Name = "chkCheckS";
+            this.chkCheckS.Size = new System.Drawing.Size(68, 17);
+            this.chkCheckS.TabIndex = 16;
+            this.chkCheckS.Text = "Exported";
+            this.chkCheckS.UseVisualStyleBackColor = true;
             // 
             // btnExport
             // 
@@ -228,16 +241,15 @@
             this.dgvRezultati.Size = new System.Drawing.Size(972, 364);
             this.dgvRezultati.TabIndex = 0;
             // 
-            // chkCheckS
+            // linkLabel1
             // 
-            this.chkCheckS.AutoSize = true;
-            this.chkCheckS.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.chkCheckS.Location = new System.Drawing.Point(174, 28);
-            this.chkCheckS.Name = "chkCheckS";
-            this.chkCheckS.Size = new System.Drawing.Size(68, 17);
-            this.chkCheckS.TabIndex = 16;
-            this.chkCheckS.Text = "Exported";
-            this.chkCheckS.UseVisualStyleBackColor = true;
+            this.linkLabel1.AutoSize = true;
+            this.linkLabel1.Location = new System.Drawing.Point(275, 28);
+            this.linkLabel1.Name = "linkLabel1";
+            this.linkLabel1.Size = new System.Drawing.Size(55, 13);
+            this.linkLabel1.TabIndex = 17;
+            this.linkLabel1.TabStop = true;
+            this.linkLabel1.Text = "linkLabel1";
             // 
             // frmImenikPretraga
             // 
@@ -281,5 +293,6 @@
         private System.Windows.Forms.TextBox tbIme;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.CheckBox chkCheckS;
+        private System.Windows.Forms.LinkLabel linkLabel1;
     }
 }
