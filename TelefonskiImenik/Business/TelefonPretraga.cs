@@ -15,44 +15,70 @@ namespace TelefonskiImenik.Business
         {
             DataTable tblSearchResults = new DataTable();
             SqlConnection conn = new SqlConnection(TelefonskiImenik.Program._connectionString);
-            SqlCommand cmd = new SqlCommand("spTelefonskiImenik_Search", conn);
-            cmd.CommandType = CommandType.StoredProcedure;
-            if (!string.IsNullOrEmpty(grad))
+            try
             {
-                cmd.Parameters.AddWithValue("@gradNaziv", grad);
+                conn.Open();
+                SqlCommand cmd = new SqlCommand("spTelefonskiImenik_Search", conn);
+                cmd.CommandType = CommandType.StoredProcedure;
+                if (!string.IsNullOrEmpty(grad))
+                {
+                    cmd.Parameters.AddWithValue("@gradNaziv", grad);
+                }
+                if (!string.IsNullOrEmpty(postanskiBroj))
+                {
+                    cmd.Parameters.AddWithValue("@postanskiBroj", postanskiBroj);
+                }
+                if (!string.IsNullOrEmpty(predBroj))
+                {
+                    cmd.Parameters.AddWithValue("@predBroj", predBroj);
+                }
+                if (!string.IsNullOrEmpty(TelefonskiBroj))
+                {
+                    cmd.Parameters.AddWithValue("@TelefonskiBroj", TelefonskiBroj);
+                }
+                if (!string.IsNullOrEmpty(ulica))
+                {
+                    cmd.Parameters.AddWithValue("@ulica", ulica);
+                }
+                if (!string.IsNullOrEmpty(ime))
+                {
+                    cmd.Parameters.AddWithValue("@ime", ime);
+                }
+                if (!string.IsNullOrEmpty(prezime))
+                {
+                    cmd.Parameters.AddWithValue("@prezime", prezime);
+                }
+                cmd.Parameters.AddWithValue("@exported", exported);
+                cmd.Parameters.AddWithValue("@pageSize", pageSize);
+                cmd.Parameters.AddWithValue("@currentPageIndex", currentPageIndex);
+                SqlParameter p = new SqlParameter();
+                p.ParameterName = "@TotalPageCount";
+                p.Direction = ParameterDirection.Output;
+                p.SqlDbType = SqlDbType.Int;
+                cmd.Parameters.Add(p);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                da.Fill(tblSearchResults);
+                TotalPageCount = Convert.ToInt32(p.Value);
             }
-            if (!string.IsNullOrEmpty(postanskiBroj))
+            catch (Exception ex)
             {
-                cmd.Parameters.AddWithValue("@postanskiBroj", postanskiBroj);
+
             }
-            if (!string.IsNullOrEmpty(predBroj))
+            finally
             {
-                cmd.Parameters.AddWithValue("@predBroj", predBroj);
+                if (conn.State != ConnectionState.Closed && conn.State != ConnectionState.Broken)
+                {
+                    try
+                    {
+                        conn.Close();
+                    }
+                    catch
+                    { }
+
+                }
+                conn = null;
             }
-            if (!string.IsNullOrEmpty(TelefonskiBroj))
-            {
-                cmd.Parameters.AddWithValue("@TelefonskiBroj", TelefonskiBroj);
-            }
-            if (!string.IsNullOrEmpty(ulica))
-            {
-                cmd.Parameters.AddWithValue("@ulica", ulica);
-            }
-            if (!string.IsNullOrEmpty(ime))
-            {
-                cmd.Parameters.AddWithValue("@ime", ime);
-            }
-            if (!string.IsNullOrEmpty(prezime))
-            {
-                cmd.Parameters.AddWithValue("@prezime", prezime);
-            }
-            cmd.Parameters.AddWithValue("@exported", exported);
-            cmd.Parameters.AddWithValue("@pageSize", pageSize);
-            cmd.Parameters.AddWithValue("@currentPageIndex", currentPageIndex);
-            SqlParameter p = new SqlParameter();
-            p.ParameterName = "@TotalPageCount";
-            p.Direction = ParameterDirection.Output;
-            SqlDataAdapter da = new SqlDataAdapter(cmd);
-            da.Fill(tblSearchResults);
+
             return tblSearchResults;
         }
     }
