@@ -57,14 +57,14 @@
             // pretragaImenikaToolStripMenuItem
             // 
             this.pretragaImenikaToolStripMenuItem.Name = "pretragaImenikaToolStripMenuItem";
-            this.pretragaImenikaToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.pretragaImenikaToolStripMenuItem.Size = new System.Drawing.Size(163, 22);
             this.pretragaImenikaToolStripMenuItem.Text = "Pretraga imenika";
             this.pretragaImenikaToolStripMenuItem.Click += new System.EventHandler(this.pretragaImenikaToolStripMenuItem_Click);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(163, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -78,6 +78,7 @@
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "frmMain";
             this.Text = "Imenik";
+            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);

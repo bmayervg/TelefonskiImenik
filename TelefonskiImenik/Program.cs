@@ -10,6 +10,7 @@ namespace TelefonskiImenik
     static class Program
     {
         public static string _connectionString;
+        public static string _userAgentListFilePath;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -18,9 +19,15 @@ namespace TelefonskiImenik
         {
             
             _connectionString = ConfigurationManager.AppSettings["connectionString"];
+            _userAgentListFilePath = ConfigurationManager.AppSettings["userAgentList"];
             if (string.IsNullOrEmpty(_connectionString))
             {
                 MessageBox.Show("connectionString NOT INITIALIZED -> app.config!");
+                Application.Exit();
+            }
+            else if (string.IsNullOrEmpty(_userAgentListFilePath))
+            {
+                MessageBox.Show("userAgentList NOT INITIALIZED -> app.config!");
                 Application.Exit();
             }
             else

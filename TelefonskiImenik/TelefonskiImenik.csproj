@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Business\Telefon.cs" />
     <Compile Include="Business\TelefonPretraga.cs" />
     <Compile Include="Forms\frmImenikPretraga.cs">
       <SubType>Form</SubType>
