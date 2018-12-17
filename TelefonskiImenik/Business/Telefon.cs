@@ -12,7 +12,7 @@ namespace TelefonskiImenik.Business
             try
             {
                 conn.Open();
-                SqlCommand cmd = new SqlCommand("spTelefonskiImenikPostResponse_Insert", conn);
+                SqlCommand cmd = new SqlCommand("spTelefonPostResponse_Insert", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@id_Telefon", id_Telefon);
                 cmd.Parameters.AddWithValue("@id_UpitTip", id_UpitTip);

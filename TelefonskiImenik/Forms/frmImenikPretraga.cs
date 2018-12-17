@@ -1,18 +1,16 @@
 ﻿using HtmlAgilityPack;
+using RestSharp;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Cache;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using TelefonskiImenik.Business;
+
 
 namespace TelefonskiImenik.Forms
 {
@@ -251,7 +249,7 @@ namespace TelefonskiImenik.Forms
             0,
             0});
             npPageSize.Minimum = new decimal(new int[] {
-            100,
+            50,
             0,
             0,
             0});
@@ -265,7 +263,7 @@ namespace TelefonskiImenik.Forms
             0,
             0});
             ((System.ComponentModel.ISupportInitialize)(npPageSize)).EndInit();
-            PageSize = 500;
+            PageSize = 50;
 
             groupBox3.Controls.Add(npPageSize);
 
@@ -349,158 +347,66 @@ namespace TelefonskiImenik.Forms
         private string provjeriRegistarNeZovi( int id_Telefon, string predBroj, string brojTelefona)
         {
             string provjera = "";
-
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("https://www.hakom.hr/default.aspx?id=8391");
-            request.Method = "POST";
-            if (string.IsNullOrEmpty(userAgent))
-            {
-                request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
-            }
-            else
-            {
-                request.UserAgent = userAgent;
-            }
-
-            //if (!string.IsNullOrEmpty(proxyIP))
-            //{
-            //    WebProxy wp = new WebProxy(proxyIP);
-            //    wp.BypassProxyOnLocal = false;
-            //    request.Timeout = 2000;
-            //    request.Proxy = wp;
-            //    request.KeepAlive = false;
-            //    request.Timeout = System.Threading.Timeout.Infinite;
-            //    request.ProtocolVersion = HttpVersion.Version10;
-            //    request.AllowWriteStreamBuffering = false;
-            //}
-
-            CookieContainer cc = new CookieContainer();
-            request.CookieContainer = cc;
-
             string boja = getBojaForPostData();
-            var postData = "brojTel:385"+ predBroj.Substring(1, predBroj.Length-1) + brojTelefona + Environment.NewLine;
-            postData += "_validacija:" + boja + Environment.NewLine;
-            postData += "_valid:" + boja + Environment.NewLine;
-            var data = Encoding.ASCII.GetBytes(postData);
-
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-            request.ContentLength = data.Length;
-
-            using (var stream = request.GetRequestStream())
+            try
             {
-                stream.Write(data, 0, data.Length);
+                var client = new RestClient("https://www.hakom.hr/default.aspx?id=8391");
+                var request = new RestRequest(Method.POST);
+                
+                request.AddHeader("cache-control", "no-cache");
+                request.AddHeader("content-type", "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW");
+                request.AddParameter("multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW", "------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"brojTel\"\r\n\r\n" + "385"+ predBroj.Substring(1, predBroj.Length-1) + brojTelefona  +"\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"_validacija\"\r\n\r\n" + boja + "\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"_valid\"\r\n\r\n" + boja + "\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--", ParameterType.RequestBody);
+                IRestResponse response = client.Execute(request);
+                string responseFromServer = response.Content;
+                if (!string.IsNullOrEmpty(responseFromServer))
+                {
+                    HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
+                    doc.LoadHtml(responseFromServer);
+                    HtmlNodeCollection texts = doc.DocumentNode.SelectNodes("//table[@class='prijenosRez2']");
+                    
+                    if (texts != null)
+                    {
+                        foreach (var item in texts)
+                        {
+                            provjera  += item.InnerText.Replace("\n", " ").Replace("\t", "").Replace("\r", "");
+                        }
+                    }
+                }
             }
-
-            string responseFromServer = "";
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            Stream dataStream = response.GetResponseStream();
-            if (dataStream != null)
+            catch (Exception ex)
             {
-                StreamReader reader = new StreamReader(dataStream);
-                responseFromServer = reader.ReadToEnd();
-                reader.Close();
-                reader.Dispose();
-            }
-            dataStream.Close();
-            dataStream.Dispose();
-            response.Close();
-            response.Dispose();
-            if (!string.IsNullOrEmpty(responseFromServer))
-            {
-               
-            }
-            else
-            {
-                provjera = "NEUSPJEŠNA PROVJERA - NEPOZNAT ODGOVOR SA SERVERA!";
+                string exDescription = "";
+                if (ex != null)
+                {
+                    exDescription += Environment.NewLine + "-------------------------------------------------------------------";
+                    exDescription += Environment.NewLine + "-------------------------------------------------------------------";
+                    exDescription += Environment.NewLine + "Exception: " + ex.Message.ToString();
+                    exDescription += Environment.NewLine + "Exception stack trace: " + ex.StackTrace.ToString();
+                    exDescription += Environment.NewLine + "Exception source:" + ex.Source.ToString();
+                    exDescription += Environment.NewLine + "Exception target site" + ex.TargetSite.ToString();
+                    if (ex.InnerException != null)
+                    {
+                        exDescription += Environment.NewLine + "Inner exception: " + ex.InnerException.Message.ToString();
+                        exDescription += (!string.IsNullOrEmpty(ex.InnerException.StackTrace) ? Environment.NewLine + "Inner exception stack trace: " + ex.InnerException.StackTrace.ToString() : "");
+                        exDescription += (!string.IsNullOrEmpty(ex.InnerException.Source) ? Environment.NewLine + "Inner exception source: " + ex.InnerException.Source.ToString() : "");
+                        exDescription += (!string.IsNullOrEmpty(ex.InnerException.TargetSite.ToString()) ? Environment.NewLine + "Inner exception target site: " + ex.InnerException.TargetSite.ToString().ToString() : "");
+                        exDescription += Environment.NewLine;
+                    }
+                    exDescription += Environment.NewLine + "-------------------------------------------------------------------";
+                    exDescription += Environment.NewLine + "-------------------------------------------------------------------";
+                }
             }
             if (chkCheckNeZoviRegistarSnimiUBazuRezultat.Checked)
             {
-                cTelefon.SnimiUpitOdgovorRegistarNeZovi(id_Telefon, postData, responseFromServer, 1);
-            }
-            return provjera;
-        }
-
-        private string provjeriRegistarPrijenosBroja(int id_Telefon, string predBroj, string brojTelefona)
-        {
-            string provjera = "";
-
-            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("https://www.hakom.hr/default.aspx?id=62");
-            request.Method = "POST";
-            if (string.IsNullOrEmpty(userAgent))
-            {
-                request.UserAgent = "Mozilla / 5.0(Windows NT 10.0; WOW64; Trident / 7.0; rv: 11.0) like Gecko";
-            }
-            else
-            {
-                request.UserAgent = userAgent;
-            }
-            if (!string.IsNullOrEmpty(proxyIP))
-            {
-                WebProxy wp = new WebProxy(proxyIP);
-                wp.BypassProxyOnLocal = false;
-                request.Timeout = 2000;
-                request.Proxy = wp;
-                request.KeepAlive = false;
-                request.Timeout = System.Threading.Timeout.Infinite;
-                request.ProtocolVersion = HttpVersion.Version10;
-                request.AllowWriteStreamBuffering = false;
-            }
-            CookieContainer cc = new CookieContainer();
-            request.CookieContainer = cc;
-
-            string boja = getBojaForPostData();
-            var postData = "brojTel:385" + predBroj.Substring(1, predBroj.Length - 1) + brojTelefona;
-            postData += "&_validacija:" + boja;
-            postData += "&_valid:" + boja;
-            postData += "&sto:prijenosBroja";
-            var data = Encoding.ASCII.GetBytes(postData);
-
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-            request.ContentLength = data.Length;
-
-            using (var stream = request.GetRequestStream())
-            {
-                stream.Write(data, 0, data.Length);
-            }
-
-
-            string responseFromServer = "";
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            Stream dataStream = response.GetResponseStream();
-            if (dataStream != null)
-            {
-                StreamReader reader = new StreamReader(dataStream);
-                responseFromServer = reader.ReadToEnd();
-                reader.Close();
-                reader.Dispose();
-            }
-            dataStream.Close();
-            dataStream.Dispose();
-            response.Close();
-            response.Dispose();
-            if (!string.IsNullOrEmpty(responseFromServer))
-            {
-
-            }
-            else
-            {
-                provjera = "NEUSPJEŠNA PROVJERA - NEPOZNAT ODGOVOR SA SERVERA!";
-            }
-            if (chkCheckNeZoviRegistarSnimiUBazuRezultat.Checked)
-            {
-                cTelefon.SnimiUpitOdgovorRegistarNeZovi(id_Telefon, postData, responseFromServer, 2);
+                string postData = "multipart / form - data; boundary = ----WebKitFormBoundary7MA4YWxkTrZu0gW -->, ------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent - Disposition: form - data; name =\"brojTel\"\r\n\r\n" + "385" + predBroj.Substring(1, predBroj.Length - 1) + brojTelefona + "\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"_validacija\"\r\n\r\n" + boja + "\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"_valid\"\r\n\r\n" + boja + "\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--";
+                cTelefon.SnimiUpitOdgovorRegistarNeZovi(id_Telefon, postData, provjera, 1);
             }
             return provjera;
         }
 
         private void btnExport_Click(object sender, EventArgs e)
         {
-            if
-            ( (chkCheckNeZoviRegistar.Checked || (chkCheckNeZoviRegistar.Checked == false &&  MessageBox.Show("Export podataka bez provjere registra NE ZOVI --> Nastaviti ?", "Export podataka", MessageBoxButtons.YesNo ) == DialogResult.Yes))
-                  ||
-                  (chkCheckPrijenosBrojaRegistar.Checked || (chkCheckPrijenosBrojaRegistar.Checked && MessageBox.Show("Export podataka bez provjere registra PRIJENOS BROJA --> Nastaviti ?", "Export podataka", MessageBoxButtons.YesNo) == DialogResult.Yes) )
-            )
+            if( (chkCheckNeZoviRegistar.Checked || (chkCheckNeZoviRegistar.Checked == false &&  MessageBox.Show("Export podataka bez provjere registra NE ZOVI --> Nastaviti ?", "Export podataka", MessageBoxButtons.YesNo ) == DialogResult.Yes)))
             {
                 btnPretrazi.Enabled = false;
                 groupBox3.Enabled = false;
@@ -514,9 +420,6 @@ namespace TelefonskiImenik.Forms
                     else
                     {
                         this.Cursor = Cursors.WaitCursor;
-                        loadUserAgentListFromFile();
-                        proxyIP = getProxyServerFromExistingListFromWeb();
-                        userAgent = getUserAgent();
                         for (int i = 0; i < tblSearchResults.Rows.Count; i++)
                         {
                             if (chkCheckNeZoviRegistar.Checked)
@@ -524,13 +427,19 @@ namespace TelefonskiImenik.Forms
                                 string result = provjeriRegistarNeZovi(Convert.ToInt32(tblSearchResults.Rows[i]["id_Telefon"]), tblSearchResults.Rows[i]["predBroj"].ToString(), tblSearchResults.Rows[i]["broj"].ToString());
                                 tblSearchResults.Rows[i]["RegistarNeZovi"] = result;
                             }
-
-                            if (chkCheckPrijenosBrojaRegistar.Checked)
+                            int waitMS = 300;
+                            if (!string.IsNullOrEmpty(tbRazmakMS.Text))
                             {
-                                string result = provjeriRegistarPrijenosBroja(Convert.ToInt32(tblSearchResults.Rows[i]["id_Telefon"]), tblSearchResults.Rows[i]["predBroj"].ToString(), tblSearchResults.Rows[i]["broj"].ToString());
-                                tblSearchResults.Rows[i]["RegistarPrijenosBroja"] = result;
+                                Int32.TryParse(tbRazmakMS.Text, out waitMS);
                             }
-                            System.Threading.Thread.Sleep(200);
+                            System.Threading.Thread.Sleep(waitMS);
+                        }
+                        SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+                        saveFileDialog1.Filter = "xlsx files (*.xlsx)|*.xlsx|All files (*.*)|*.*";
+                        if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+                        {
+                            ExcelUtils.ExportDataTableToExcel2007(tblSearchResults, saveFileDialog1.FileName, "TelefonskiBrojevi");
+                            MessageBox.Show("Export uspješan!");
                         }
                     }
                 }
@@ -616,12 +525,6 @@ namespace TelefonskiImenik.Forms
         {
             chkCheckNeZoviRegistarSnimiUBazuRezultat.Checked = chkCheckNeZoviRegistar.Checked;
         }
-
-        private void chkCheckPrijenosBrojaRegistar_CheckedChanged(object sender, EventArgs e)
-        {
-            chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.Checked = chkCheckPrijenosBrojaRegistar.Checked;
-        }
-
     }
 }
 

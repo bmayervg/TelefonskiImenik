@@ -51,17 +51,15 @@
             this.chkCheckNeZoviRegistar = new System.Windows.Forms.CheckBox();
             this.btnExport = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.groupBox6 = new System.Windows.Forms.GroupBox();
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat = new System.Windows.Forms.CheckBox();
-            this.chkCheckPrijenosBrojaRegistar = new System.Windows.Forms.CheckBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.chkCheckNeZoviRegistarSnimiUBazuRezultat = new System.Windows.Forms.CheckBox();
             this.rtbResponse = new System.Windows.Forms.RichTextBox();
+            this.tbRazmakMS = new System.Windows.Forms.TextBox();
+            this.label7 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvRezultati)).BeginInit();
             this.groupBox4.SuspendLayout();
-            this.groupBox6.SuspendLayout();
             this.groupBox5.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -276,9 +274,9 @@
             // btnExport
             // 
             this.btnExport.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.btnExport.Location = new System.Drawing.Point(450, 22);
+            this.btnExport.Location = new System.Drawing.Point(283, 22);
             this.btnExport.Name = "btnExport";
-            this.btnExport.Size = new System.Drawing.Size(188, 67);
+            this.btnExport.Size = new System.Drawing.Size(188, 87);
             this.btnExport.TabIndex = 5;
             this.btnExport.Text = "Export";
             this.btnExport.UseVisualStyleBackColor = true;
@@ -286,62 +284,24 @@
             // 
             // groupBox4
             // 
-            this.groupBox4.Controls.Add(this.groupBox6);
             this.groupBox4.Controls.Add(this.groupBox5);
             this.groupBox4.Controls.Add(this.rtbResponse);
             this.groupBox4.Controls.Add(this.btnExport);
             this.groupBox4.Location = new System.Drawing.Point(416, 13);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(661, 187);
+            this.groupBox4.Size = new System.Drawing.Size(482, 187);
             this.groupBox4.TabIndex = 35;
             this.groupBox4.TabStop = false;
             // 
-            // groupBox6
-            // 
-            this.groupBox6.Controls.Add(this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat);
-            this.groupBox6.Controls.Add(this.chkCheckPrijenosBrojaRegistar);
-            this.groupBox6.Location = new System.Drawing.Point(221, 16);
-            this.groupBox6.Name = "groupBox6";
-            this.groupBox6.Size = new System.Drawing.Size(223, 74);
-            this.groupBox6.TabIndex = 37;
-            this.groupBox6.TabStop = false;
-            this.groupBox6.Tag = "NE ZOVI";
-            this.groupBox6.Text = "Registar PRIJENOS BROJA";
-            // 
-            // chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat
-            // 
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.AutoSize = true;
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.Checked = true;
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.Location = new System.Drawing.Point(9, 42);
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.Name = "chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat";
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.Size = new System.Drawing.Size(198, 17);
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.TabIndex = 19;
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.Text = "Rezultat provjere spremi u bazu        ";
-            this.chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat.UseVisualStyleBackColor = true;
-            // 
-            // chkCheckPrijenosBrojaRegistar
-            // 
-            this.chkCheckPrijenosBrojaRegistar.AutoSize = true;
-            this.chkCheckPrijenosBrojaRegistar.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.chkCheckPrijenosBrojaRegistar.Checked = true;
-            this.chkCheckPrijenosBrojaRegistar.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkCheckPrijenosBrojaRegistar.Location = new System.Drawing.Point(8, 19);
-            this.chkCheckPrijenosBrojaRegistar.Name = "chkCheckPrijenosBrojaRegistar";
-            this.chkCheckPrijenosBrojaRegistar.Size = new System.Drawing.Size(199, 17);
-            this.chkCheckPrijenosBrojaRegistar.TabIndex = 16;
-            this.chkCheckPrijenosBrojaRegistar.Text = "Provjera registar PRIJENOS BROJA ";
-            this.chkCheckPrijenosBrojaRegistar.UseVisualStyleBackColor = true;
-            this.chkCheckPrijenosBrojaRegistar.CheckedChanged += new System.EventHandler(this.chkCheckPrijenosBrojaRegistar_CheckedChanged);
-            // 
             // groupBox5
             // 
+            this.groupBox5.Controls.Add(this.tbRazmakMS);
+            this.groupBox5.Controls.Add(this.label7);
             this.groupBox5.Controls.Add(this.chkCheckNeZoviRegistarSnimiUBazuRezultat);
             this.groupBox5.Controls.Add(this.chkCheckNeZoviRegistar);
             this.groupBox5.Location = new System.Drawing.Point(10, 16);
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(205, 74);
+            this.groupBox5.Size = new System.Drawing.Size(267, 93);
             this.groupBox5.TabIndex = 36;
             this.groupBox5.TabStop = false;
             this.groupBox5.Tag = "NE ZOVI";
@@ -353,7 +313,7 @@
             this.chkCheckNeZoviRegistarSnimiUBazuRezultat.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.chkCheckNeZoviRegistarSnimiUBazuRezultat.Checked = true;
             this.chkCheckNeZoviRegistarSnimiUBazuRezultat.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkCheckNeZoviRegistarSnimiUBazuRezultat.Location = new System.Drawing.Point(9, 42);
+            this.chkCheckNeZoviRegistarSnimiUBazuRezultat.Location = new System.Drawing.Point(8, 42);
             this.chkCheckNeZoviRegistarSnimiUBazuRezultat.Name = "chkCheckNeZoviRegistarSnimiUBazuRezultat";
             this.chkCheckNeZoviRegistarSnimiUBazuRezultat.Size = new System.Drawing.Size(174, 17);
             this.chkCheckNeZoviRegistarSnimiUBazuRezultat.TabIndex = 19;
@@ -362,11 +322,28 @@
             // 
             // rtbResponse
             // 
-            this.rtbResponse.Location = new System.Drawing.Point(10, 102);
+            this.rtbResponse.Location = new System.Drawing.Point(10, 115);
             this.rtbResponse.Name = "rtbResponse";
-            this.rtbResponse.Size = new System.Drawing.Size(634, 71);
+            this.rtbResponse.Size = new System.Drawing.Size(461, 58);
             this.rtbResponse.TabIndex = 18;
             this.rtbResponse.Text = "";
+            // 
+            // tbRazmakMS
+            // 
+            this.tbRazmakMS.Location = new System.Drawing.Point(211, 60);
+            this.tbRazmakMS.Name = "tbRazmakMS";
+            this.tbRazmakMS.Size = new System.Drawing.Size(40, 20);
+            this.tbRazmakMS.TabIndex = 19;
+            this.tbRazmakMS.Text = "500";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(9, 64);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(172, 13);
+            this.label7.TabIndex = 18;
+            this.label7.Text = "Razmak ms izmedju upita u registar";
             // 
             // frmImenikPretraga
             // 
@@ -387,8 +364,6 @@
             this.groupBox2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvRezultati)).EndInit();
             this.groupBox4.ResumeLayout(false);
-            this.groupBox6.ResumeLayout(false);
-            this.groupBox6.PerformLayout();
             this.groupBox5.ResumeLayout(false);
             this.groupBox5.PerformLayout();
             this.ResumeLayout(false);
@@ -420,11 +395,10 @@
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.GroupBox groupBox4;
-        private System.Windows.Forms.GroupBox groupBox6;
-        private System.Windows.Forms.CheckBox chkCheckPrijenosBrojaRegistarSnimiUBazuRezultat;
-        private System.Windows.Forms.CheckBox chkCheckPrijenosBrojaRegistar;
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.CheckBox chkCheckNeZoviRegistarSnimiUBazuRezultat;
         private System.Windows.Forms.RichTextBox rtbResponse;
+        private System.Windows.Forms.TextBox tbRazmakMS;
+        private System.Windows.Forms.Label label7;
     }
 }
