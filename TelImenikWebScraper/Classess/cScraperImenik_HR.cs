@@ -234,7 +234,7 @@ namespace TelImenikWebScraper.Classess
             string proxyServer = "";
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("https://free-proxy-list.net");
             request.Method = "GET";
-            request.ReadWriteTimeout = 4000;//200000;
+            request.ReadWriteTimeout = 6000;//200000;
             HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
             request.CachePolicy = noCachePolicy;
             request.UserAgent = userAgent;
