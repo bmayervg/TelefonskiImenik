@@ -439,6 +439,10 @@ namespace TelefonskiImenik.Forms
                         if (saveFileDialog1.ShowDialog() == DialogResult.OK)
                         {
                             ExcelUtils.ExportDataTableToExcel2007(tblSearchResults, saveFileDialog1.FileName, "TelefonskiBrojevi");
+                            for (int i = 0; i < tblSearchResults.Rows.Count; i++)
+                            {
+                                cTelefon.UpdateTelefonExported(Convert.ToInt32(tblSearchResults.Rows[i]["id_Telefon"]), saveFileDialog1.FileName);
+                            }
                             MessageBox.Show("Export uspješan!");
                         }
                     }
