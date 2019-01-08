@@ -52,10 +52,10 @@
             this.btnExport = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.chkCheckNeZoviRegistarSnimiUBazuRezultat = new System.Windows.Forms.CheckBox();
-            this.rtbResponse = new System.Windows.Forms.RichTextBox();
             this.tbRazmakMS = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
+            this.chkCheckNeZoviRegistarSnimiUBazuRezultat = new System.Windows.Forms.CheckBox();
+            this.rtbResponse = new System.Windows.Forms.RichTextBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvRezultati)).BeginInit();
@@ -191,9 +191,9 @@
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(12, 22);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(30, 13);
+            this.label1.Size = new System.Drawing.Size(36, 13);
             this.label1.TabIndex = 3;
-            this.label1.Text = "Grad";
+            this.label1.Text = "Grada";
             // 
             // tbPostanskiBroj
             // 
@@ -307,6 +307,23 @@
             this.groupBox5.Tag = "NE ZOVI";
             this.groupBox5.Text = "Registar NE ZOVI";
             // 
+            // tbRazmakMS
+            // 
+            this.tbRazmakMS.Location = new System.Drawing.Point(211, 60);
+            this.tbRazmakMS.Name = "tbRazmakMS";
+            this.tbRazmakMS.Size = new System.Drawing.Size(40, 20);
+            this.tbRazmakMS.TabIndex = 19;
+            this.tbRazmakMS.Text = "500";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(9, 64);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(172, 13);
+            this.label7.TabIndex = 18;
+            this.label7.Text = "Razmak ms izmedju upita u registar";
+            // 
             // chkCheckNeZoviRegistarSnimiUBazuRezultat
             // 
             this.chkCheckNeZoviRegistarSnimiUBazuRezultat.AutoSize = true;
@@ -327,23 +344,6 @@
             this.rtbResponse.Size = new System.Drawing.Size(461, 58);
             this.rtbResponse.TabIndex = 18;
             this.rtbResponse.Text = "";
-            // 
-            // tbRazmakMS
-            // 
-            this.tbRazmakMS.Location = new System.Drawing.Point(211, 60);
-            this.tbRazmakMS.Name = "tbRazmakMS";
-            this.tbRazmakMS.Size = new System.Drawing.Size(40, 20);
-            this.tbRazmakMS.TabIndex = 19;
-            this.tbRazmakMS.Text = "500";
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(9, 64);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(172, 13);
-            this.label7.TabIndex = 18;
-            this.label7.Text = "Razmak ms izmedju upita u registar";
             // 
             // frmImenikPretraga
             // 
