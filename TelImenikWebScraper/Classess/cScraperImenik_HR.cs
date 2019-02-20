@@ -867,19 +867,31 @@ namespace TelImenikWebScraper.Classess
                     HtmlAgilityPack.HtmlNodeCollection htmlNodesOsobaAdresa = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' adresa_detalj ')]");
                     if (htmlNodesOsobaAdresa != null && htmlNodesOsobaAdresa.Count > 0)
                     {
-                        string[] osobaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(' ');
+                        string[] osobaPodaci = htmlNodesOsobaAdresa[0].InnerText.Trim().Split(',');
                         if (osobaPodaci != null && osobaPodaci.Length != 0)
                         {
                             try
                             {
+                                //10410 Velika Gorica, Cvjetno naselje 12
                                 osobaPunaAdresa = htmlNodesOsobaAdresa[0].InnerText.Trim();
-                                osobaPostanskiBroj = osobaPodaci[0].ToString().Replace(",", "");
-                                osobaNaselje = osobaPodaci[1].ToString().Replace(",", "");
-                                osobaUlica = osobaPodaci[2].ToString().Replace(",", "");
-
-                                if (osobaPodaci.Length == 4)
+                                string[] osobaPodaciPostanskiBrojGrad = osobaPodaci[0].Split(' ');
+                                if (osobaPodaciPostanskiBrojGrad != null && osobaPodaciPostanskiBrojGrad.Length != 0)
                                 {
-                                    osobaKucniBroj = osobaPodaci[3].ToString();
+                                    osobaPostanskiBroj = osobaPodaciPostanskiBrojGrad[0].ToString();
+                                    for (int i = 1; i < osobaPodaciPostanskiBrojGrad.Length; i++)
+                                    {
+                                        osobaNaselje += osobaPodaciPostanskiBrojGrad[i].ToString() + " ";
+                                    }
+                                }
+
+                                string[] osobaPodaciUlicaKucniBroj = osobaPodaci[1].Split(' ');
+                                if (osobaPodaciUlicaKucniBroj != null && osobaPodaciUlicaKucniBroj.Length != 0)
+                                {
+                                    osobaKucniBroj = osobaPodaciUlicaKucniBroj[osobaPodaciUlicaKucniBroj.Length - 1].ToString();
+                                    for (int i = 0; i < osobaPodaciUlicaKucniBroj.Length-1; i++)
+                                    {
+                                        osobaUlica += osobaPodaciUlicaKucniBroj[i].ToString() + " ";
+                                    }
                                 }
                             }
                             catch (Exception ex)

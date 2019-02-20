@@ -195,6 +195,7 @@ namespace TelefonskiImenik.Forms
             InitializeComponent();
             tblSearchResults = new DataTable();
             dgvRezultati.DataSource = tblSearchResults;
+            loadUserAgentListFromFile();
         }
 
         private void fillSearchResultHeader()
@@ -352,7 +353,7 @@ namespace TelefonskiImenik.Forms
             {
                 var client = new RestClient("https://www.hakom.hr/default.aspx?id=8391");
                 var request = new RestRequest(Method.POST);
-                
+                client.UserAgent = getUserAgent();
                 request.AddHeader("cache-control", "no-cache");
                 request.AddHeader("content-type", "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW");
                 request.AddParameter("multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW", "------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"brojTel\"\r\n\r\n" + "385"+ predBroj.Substring(1, predBroj.Length-1) + brojTelefona  +"\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"_validacija\"\r\n\r\n" + boja + "\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"_valid\"\r\n\r\n" + boja + "\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--", ParameterType.RequestBody);
