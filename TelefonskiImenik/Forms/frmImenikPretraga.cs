@@ -407,6 +407,7 @@ namespace TelefonskiImenik.Forms
 
         private void btnExport_Click(object sender, EventArgs e)
         {
+
             if( (chkCheckNeZoviRegistar.Checked || (chkCheckNeZoviRegistar.Checked == false &&  MessageBox.Show("Export podataka bez provjere registra NE ZOVI --> Nastaviti ?", "Export podataka", MessageBoxButtons.YesNo ) == DialogResult.Yes)))
             {
                 btnPretrazi.Enabled = false;
