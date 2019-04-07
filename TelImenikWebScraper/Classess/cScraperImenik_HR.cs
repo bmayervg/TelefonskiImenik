@@ -810,27 +810,32 @@ namespace TelImenikWebScraper.Classess
         {
             HtmlAgilityPack.HtmlDocument doc = new HtmlDocument();
             string responseFromServer = GetResponseFromServerForOsoba(linkOsobaTelBroj, cookies, proxyIP, userAgent, requestTimeout);
-            if (!string.IsNullOrEmpty(responseFromServer))
-            {
-                while
+            int counter = 0;
+            while
+            (
                 (
-                         responseFromServer.Contains("Odmori malo, zaslužio si...")
-                      || responseFromServer.Contains("A connection attempt failed because the connected party did not properly respond after a period of time") 
-                      || responseFromServer.Contains("The operation was canceled.") 
-                      || responseFromServer.Contains("The operation has timed out.") 
-                      || responseFromServer.Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") 
-                      || responseFromServer.Contains("An existing connection was forcibly closed by the remote host") 
-                      || responseFromServer.Contains("The remote server returned an error: (403) Forbidden")
-                 )
-                {
-                    proxyIP = getProxyServer();
-                    userAgent = getUserAgent();
-                    Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> GetHTMLOsoba -->" + linkOsobaTelBroj + " --> GETTING NEW PROXY!");
-                    responseFromServer = GetResponseFromServerForOsoba(linkOsobaTelBroj, cookies, proxyIP, userAgent, requestTimeout);
-                }
-                doc = new HtmlAgilityPack.HtmlDocument();
-                doc.LoadHtml(responseFromServer);
+                        responseFromServer.Contains("Odmori malo, zaslužio si...")
+                    || responseFromServer.Contains("A connection attempt failed because the connected party did not properly respond after a period of time") 
+                    || responseFromServer.Contains("The operation was canceled.") 
+                    || responseFromServer.Contains("The operation has timed out.") 
+                    || responseFromServer.Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") 
+                    || responseFromServer.Contains("An existing connection was forcibly closed by the remote host") 
+                    || responseFromServer.Contains("The remote server returned an error: (403) Forbidden")
+                    || responseFromServer == ""
+                    || string.IsNullOrEmpty( responseFromServer )
+                )
+                && counter <=30
+            )
+            {
+                proxyIP = getProxyServer();
+                userAgent = getUserAgent();
+                Console.WriteLine("\r{0}", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " --> GetHTMLOsoba -->" + linkOsobaTelBroj + " --> GETTING NEW PROXY!");
+                responseFromServer = GetResponseFromServerForOsoba(linkOsobaTelBroj, cookies, proxyIP, userAgent, requestTimeout);
+                counter++;
             }
+            doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(responseFromServer);
+            
             return doc;
         }
 
@@ -880,6 +885,7 @@ namespace TelImenikWebScraper.Classess
                                     osobaPostanskiBroj = osobaPodaciPostanskiBrojGrad[0].ToString();
                                     for (int i = 1; i < osobaPodaciPostanskiBrojGrad.Length; i++)
                                     {
+                                        if(osobaPodaciPostanskiBrojGrad[i].ToString().Replace(" ", "") != "" )
                                         osobaNaselje += osobaPodaciPostanskiBrojGrad[i].ToString() + " ";
                                     }
                                 }
@@ -890,7 +896,10 @@ namespace TelImenikWebScraper.Classess
                                     osobaKucniBroj = osobaPodaciUlicaKucniBroj[osobaPodaciUlicaKucniBroj.Length - 1].ToString();
                                     for (int i = 0; i < osobaPodaciUlicaKucniBroj.Length-1; i++)
                                     {
-                                        osobaUlica += osobaPodaciUlicaKucniBroj[i].ToString() + " ";
+                                        if (osobaPodaciUlicaKucniBroj[i].ToString().Replace(" ", "") != "")
+                                        {
+                                            osobaUlica += osobaPodaciUlicaKucniBroj[i].ToString() + " ";
+                                        }
                                     }
                                 }
                             }
