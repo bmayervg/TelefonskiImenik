@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Cache;
 using System.Net.Sockets;
+using System.Text;
 using System.Windows.Forms;
 using TelefonskiImenik.Business;
 
@@ -345,6 +346,19 @@ namespace TelefonskiImenik.Forms
             }
         }
 
+        private string provjeriMogucPrijenosBroja(int id_Telefon, string predBroj, string brojTelefona)
+        {
+            string rezultatProvjere = "";
+            return rezultatProvjere;
+        }
+
+        private string provjeriPrijenosBroja(int id_Telefon, string predBroj, string brojTelefona )
+        {
+            string result = "";
+            return result;
+        }
+
+        /*
         private string provjeriRegistarNeZovi( int id_Telefon, string predBroj, string brojTelefona)
         {
             string provjera = "";
@@ -404,11 +418,11 @@ namespace TelefonskiImenik.Forms
             }
             return provjera;
         }
-
+        */
         private void btnExport_Click(object sender, EventArgs e)
         {
 
-            if( (chkCheckNeZoviRegistar.Checked || (chkCheckNeZoviRegistar.Checked == false &&  MessageBox.Show("Export podataka bez provjere registra NE ZOVI --> Nastaviti ?", "Export podataka", MessageBoxButtons.YesNo ) == DialogResult.Yes)))
+            if( (chkHAKOMProvjeraPrijenosa.Checked || (chkHAKOMProvjeraPrijenosa.Checked == false &&  MessageBox.Show("Export podataka bez provjere mogućnosti prijenosa broja --> Nastaviti ?", "Export podataka", MessageBoxButtons.YesNo ) == DialogResult.Yes)))
             {
                 btnPretrazi.Enabled = false;
                 groupBox3.Enabled = false;
@@ -424,12 +438,12 @@ namespace TelefonskiImenik.Forms
                         this.Cursor = Cursors.WaitCursor;
                         for (int i = 0; i < tblSearchResults.Rows.Count; i++)
                         {
-                            if (chkCheckNeZoviRegistar.Checked)
+                            if (chkHAKOMProvjeraPrijenosa.Checked)
                             {
-                                string result = provjeriRegistarNeZovi(Convert.ToInt32(tblSearchResults.Rows[i]["id_Telefon"]), tblSearchResults.Rows[i]["predBroj"].ToString(), tblSearchResults.Rows[i]["broj"].ToString());
+                                string result = "";// provjeriRegistarNeZovi(Convert.ToInt32(tblSearchResults.Rows[i]["id_Telefon"]), tblSearchResults.Rows[i]["predBroj"].ToString(), tblSearchResults.Rows[i]["broj"].ToString());
                                 tblSearchResults.Rows[i]["RegistarNeZovi"] = result;
                             }
-                            int waitMS = 300;
+                            int waitMS = 1000;
                             if (!string.IsNullOrEmpty(tbRazmakMS.Text))
                             {
                                 Int32.TryParse(tbRazmakMS.Text, out waitMS);
@@ -529,7 +543,65 @@ namespace TelefonskiImenik.Forms
 
         private void chkCheckNeZoviRegistar_CheckedChanged(object sender, EventArgs e)
         {
-            chkCheckNeZoviRegistarSnimiUBazuRezultat.Checked = chkCheckNeZoviRegistar.Checked;
+            //chkCheckNeZoviRegistarSnimiUBazuRezultat.Checked = chkCheckNeZoviRegistar.Checked;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            //string link = "https://www.hakom.hr/operatorSWC.aspx?brojTel=3859161212377&lng=hr&android=yes";
+            //HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
+            //request.Method = "GET";
+            //request.ReadWriteTimeout =  5000;//200000;
+            //HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
+            //request.CachePolicy = noCachePolicy;
+            //request.UserAgent = getUserAgent();
+
+
+            //WebProxy wp = new WebProxy(getProxyServerFromExistingListFromWeb());
+            //wp.BypassProxyOnLocal = true;
+            //request.Timeout = 5000;
+            //request.Proxy = wp;
+            //request.KeepAlive = false;
+            //request.ProtocolVersion = HttpVersion.Version10;
+            //request.AllowWriteStreamBuffering = false;
+
+            //string responseFromServer = "";
+            //HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            //var buffer = new byte[180000];
+            //using (Stream sm = response.GetResponseStream())
+            //{
+            //    int totalBytesRead = 0;
+            //    int bytesRead;
+            //    do
+            //    {
+            //        if (sm.CanRead)
+            //        {
+            //            bytesRead = sm.Read(buffer, totalBytesRead, 180000 - totalBytesRead);
+            //            totalBytesRead += bytesRead;
+            //        }
+            //        else
+            //        {
+            //            bytesRead = 0;
+            //        }
+            //    } while (bytesRead != 0);
+            //    request.Abort();
+            //}
+            //responseFromServer = Encoding.Default.GetString(buffer);
+            //buffer = null;
+            //if (!string.IsNullOrEmpty(responseFromServer))
+            //{
+            //    cTelefon.SnimiUpitOdgovorRegistarNeZovi(id_Telefon, postData, provjera, 1);
+            //}
+
+    //        < DATA >
+
+    //< OPERATOR > A1 HRVATSKA â€“ POKRETNI </ OPERATOR >
+   
+    //   < BROJ > 3859161212377 </ BROJ >
+   
+    //   < STATUS > Broj nije u postupku prijenosa</ STATUS >
+    //  </ DATA >
+
         }
     }
 }
