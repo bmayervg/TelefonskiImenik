@@ -6,7 +6,7 @@ namespace TelefonskiImenik.Business
 {
     public class cTelefon
     {
-        public static void SnimiUpitOdgovorRegistarNeZovi(int id_Telefon, string postData, string httpResponse, int id_UpitTip)
+        public static void SnimiUpitOdgovorRegistarNeZovi(int id_Telefon, string postData, string httpResponse, int id_UpitTip, string operater, string status )
         {
             SqlConnection conn = new SqlConnection(TelefonskiImenik.Program._connectionString);
             try
@@ -18,6 +18,8 @@ namespace TelefonskiImenik.Business
                 cmd.Parameters.AddWithValue("@id_UpitTip", id_UpitTip);
                 cmd.Parameters.AddWithValue("@postData", postData);
                 cmd.Parameters.AddWithValue("@httpResponse", httpResponse);
+                cmd.Parameters.AddWithValue("@operater", operater);
+                cmd.Parameters.AddWithValue("@status", status);
                 cmd.ExecuteNonQuery();
             }
             catch (Exception ex)

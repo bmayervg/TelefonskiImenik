@@ -355,6 +355,63 @@ namespace TelefonskiImenik.Forms
         private string provjeriPrijenosBroja(int id_Telefon, string predBroj, string brojTelefona )
         {
             string result = "";
+
+            //string link = "https://www.hakom.hr/operatorSWC.aspx?brojTel=3859161212377&lng=hr&android=yes";
+            //HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
+            //request.Method = "GET";
+            //request.ReadWriteTimeout =  5000;//200000;
+            //HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
+            //request.CachePolicy = noCachePolicy;
+            //request.UserAgent = getUserAgent();
+
+
+            //WebProxy wp = new WebProxy(getProxyServerFromExistingListFromWeb());
+            //wp.BypassProxyOnLocal = true;
+            //request.Timeout = 5000;
+            //request.Proxy = wp;
+            //request.KeepAlive = false;
+            //request.ProtocolVersion = HttpVersion.Version10;
+            //request.AllowWriteStreamBuffering = false;
+
+            //string responseFromServer = "";
+            //HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            //var buffer = new byte[180000];
+            //using (Stream sm = response.GetResponseStream())
+            //{
+            //    int totalBytesRead = 0;
+            //    int bytesRead;
+            //    do
+            //    {
+            //        if (sm.CanRead)
+            //        {
+            //            bytesRead = sm.Read(buffer, totalBytesRead, 180000 - totalBytesRead);
+            //            totalBytesRead += bytesRead;
+            //        }
+            //        else
+            //        {
+            //            bytesRead = 0;
+            //        }
+            //    } while (bytesRead != 0);
+            //    request.Abort();
+            //}
+            //responseFromServer = Encoding.Default.GetString(buffer);
+            //buffer = null;
+            //if (!string.IsNullOrEmpty(responseFromServer))
+            //{
+            //    cTelefon.SnimiUpitOdgovorRegistarNeZovi(id_Telefon, postData, provjera, 1);
+            //}
+            //string s = "<DATA><OPERATOR> A1 HRVATSKA POKRETNI </OPERATOR><BROJ>3859161212377</BROJ><STATUS> Broj nije u postupku prijenosa</STATUS></DATA>";
+            //string operater = "";
+            //string statusBroja = "";
+            //if (s.StartsWith("<DATA>"))
+            //{
+            //    if (s.Contains("<OPERATOR>"))
+            //    {
+            //        operater = s.Substring(s.IndexOf("<OPERATOR>"), s.IndexOf("</OPERATOR>") - 16);
+            //        statusBroja = s.Substring(s.IndexOf(< STATUS > ) )
+            //    }
+            //}
+
             return result;
         }
 
