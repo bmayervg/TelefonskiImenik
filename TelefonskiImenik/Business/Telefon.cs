@@ -18,8 +18,8 @@ namespace TelefonskiImenik.Business
                 cmd.Parameters.AddWithValue("@id_UpitTip", id_UpitTip);
                 cmd.Parameters.AddWithValue("@postData", postData);
                 cmd.Parameters.AddWithValue("@httpResponse", httpResponse);
-                cmd.Parameters.AddWithValue("@operater", operater);
-                cmd.Parameters.AddWithValue("@status", status);
+                cmd.Parameters.AddWithValue("@HAKOMOperater", operater);
+                cmd.Parameters.AddWithValue("@HAKOMStatus", status);
                 cmd.ExecuteNonQuery();
             }
             catch (Exception ex)

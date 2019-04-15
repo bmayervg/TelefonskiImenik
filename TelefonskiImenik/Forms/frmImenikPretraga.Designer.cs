@@ -50,14 +50,15 @@
             this.dgvRezultati = new System.Windows.Forms.DataGridView();
             this.btnExport = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.button1 = new System.Windows.Forms.Button();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.checkBox2 = new System.Windows.Forms.CheckBox();
+            this.chkUseProxy = new System.Windows.Forms.CheckBox();
+            this.chkCheckA1Imenik = new System.Windows.Forms.CheckBox();
             this.tbRazmakMS = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
             this.chkHAKOMProvjeraPrijenosaUBazuRezultat = new System.Windows.Forms.CheckBox();
             this.chkHAKOMProvjeraPrijenosa = new System.Windows.Forms.CheckBox();
             this.rtbResponse = new System.Windows.Forms.RichTextBox();
-            this.button1 = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvRezultati)).BeginInit();
@@ -262,9 +263,9 @@
             // btnExport
             // 
             this.btnExport.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.btnExport.Location = new System.Drawing.Point(498, 122);
+            this.btnExport.Location = new System.Drawing.Point(502, 122);
             this.btnExport.Name = "btnExport";
-            this.btnExport.Size = new System.Drawing.Size(143, 59);
+            this.btnExport.Size = new System.Drawing.Size(139, 59);
             this.btnExport.TabIndex = 5;
             this.btnExport.Text = "Export";
             this.btnExport.UseVisualStyleBackColor = true;
@@ -282,33 +283,60 @@
             this.groupBox4.TabIndex = 35;
             this.groupBox4.TabStop = false;
             // 
+            // button1
+            // 
+            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.button1.Location = new System.Drawing.Point(558, 35);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(89, 59);
+            this.button1.TabIndex = 37;
+            this.button1.Text = "Export";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Visible = false;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
             // groupBox5
             // 
-            this.groupBox5.Controls.Add(this.checkBox2);
+            this.groupBox5.Controls.Add(this.chkUseProxy);
+            this.groupBox5.Controls.Add(this.chkCheckA1Imenik);
             this.groupBox5.Controls.Add(this.tbRazmakMS);
             this.groupBox5.Controls.Add(this.label7);
             this.groupBox5.Controls.Add(this.chkHAKOMProvjeraPrijenosaUBazuRezultat);
             this.groupBox5.Controls.Add(this.chkHAKOMProvjeraPrijenosa);
             this.groupBox5.Location = new System.Drawing.Point(10, 16);
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(479, 59);
+            this.groupBox5.Size = new System.Drawing.Size(496, 59);
             this.groupBox5.TabIndex = 36;
             this.groupBox5.TabStop = false;
             this.groupBox5.Tag = "NE ZOVI";
             this.groupBox5.Text = "HAKOM Prijenos broja";
             // 
-            // checkBox2
+            // chkUseProxy
             // 
-            this.checkBox2.AutoSize = true;
-            this.checkBox2.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.checkBox2.Checked = true;
-            this.checkBox2.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox2.Location = new System.Drawing.Point(150, 19);
-            this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(145, 17);
-            this.checkBox2.TabIndex = 20;
-            this.checkBox2.Text = "Provjeri broj u A1 imeniku";
-            this.checkBox2.UseVisualStyleBackColor = true;
+            this.chkUseProxy.AutoSize = true;
+            this.chkUseProxy.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.chkUseProxy.Checked = true;
+            this.chkUseProxy.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkUseProxy.Location = new System.Drawing.Point(230, 38);
+            this.chkUseProxy.Name = "chkUseProxy";
+            this.chkUseProxy.Size = new System.Drawing.Size(256, 17);
+            this.chkUseProxy.TabIndex = 21;
+            this.chkUseProxy.Text = "Koristi PROXY servere prilikom provjere prijenosa";
+            this.chkUseProxy.UseVisualStyleBackColor = true;
+            // 
+            // chkCheckA1Imenik
+            // 
+            this.chkCheckA1Imenik.AutoSize = true;
+            this.chkCheckA1Imenik.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.chkCheckA1Imenik.Checked = true;
+            this.chkCheckA1Imenik.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkCheckA1Imenik.Location = new System.Drawing.Point(150, 19);
+            this.chkCheckA1Imenik.Name = "chkCheckA1Imenik";
+            this.chkCheckA1Imenik.Size = new System.Drawing.Size(145, 17);
+            this.chkCheckA1Imenik.TabIndex = 20;
+            this.chkCheckA1Imenik.Text = "Provjeri broj u A1 imeniku";
+            this.chkCheckA1Imenik.UseVisualStyleBackColor = true;
+            this.chkCheckA1Imenik.Visible = false;
             // 
             // tbRazmakMS
             // 
@@ -333,7 +361,7 @@
             this.chkHAKOMProvjeraPrijenosaUBazuRezultat.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.chkHAKOMProvjeraPrijenosaUBazuRezultat.Checked = true;
             this.chkHAKOMProvjeraPrijenosaUBazuRezultat.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkHAKOMProvjeraPrijenosaUBazuRezultat.Location = new System.Drawing.Point(301, 19);
+            this.chkHAKOMProvjeraPrijenosaUBazuRezultat.Location = new System.Drawing.Point(312, 19);
             this.chkHAKOMProvjeraPrijenosaUBazuRezultat.Name = "chkHAKOMProvjeraPrijenosaUBazuRezultat";
             this.chkHAKOMProvjeraPrijenosaUBazuRezultat.Size = new System.Drawing.Size(174, 17);
             this.chkHAKOMProvjeraPrijenosaUBazuRezultat.TabIndex = 19;
@@ -352,26 +380,14 @@
             this.chkHAKOMProvjeraPrijenosa.TabIndex = 16;
             this.chkHAKOMProvjeraPrijenosa.Text = "Provjera prijenosa broja";
             this.chkHAKOMProvjeraPrijenosa.UseVisualStyleBackColor = true;
-            this.chkHAKOMProvjeraPrijenosa.CheckedChanged += new System.EventHandler(this.chkCheckNeZoviRegistar_CheckedChanged);
             // 
             // rtbResponse
             // 
             this.rtbResponse.Location = new System.Drawing.Point(10, 78);
             this.rtbResponse.Name = "rtbResponse";
-            this.rtbResponse.Size = new System.Drawing.Size(475, 95);
+            this.rtbResponse.Size = new System.Drawing.Size(486, 95);
             this.rtbResponse.TabIndex = 18;
             this.rtbResponse.Text = "";
-            // 
-            // button1
-            // 
-            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.button1.Location = new System.Drawing.Point(504, 35);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(143, 59);
-            this.button1.TabIndex = 37;
-            this.button1.Text = "Export";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // frmImenikPretraga
             // 
@@ -428,7 +444,8 @@
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.CheckBox chkHAKOMProvjeraPrijenosaUBazuRezultat;
         private System.Windows.Forms.CheckBox chkHAKOMProvjeraPrijenosa;
-        private System.Windows.Forms.CheckBox checkBox2;
+        private System.Windows.Forms.CheckBox chkCheckA1Imenik;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.CheckBox chkUseProxy;
     }
 }

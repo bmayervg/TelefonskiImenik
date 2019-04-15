@@ -15,6 +15,8 @@ using TelefonskiImenik.Business;
 
 namespace TelefonskiImenik.Forms
 {
+    public delegate void PropagateHAKOMLINKANDRESULTS(string msg);
+
     public partial class frmImenikPretraga : Form
     {
 
@@ -110,11 +112,10 @@ namespace TelefonskiImenik.Forms
                         }
                         if (!string.IsNullOrEmpty(ip))
                         {
-                            try
-                            {
-                                TcpClient client = new TcpClient(ip, port);
-                            }
-                            catch (Exception ex)
+                            var client = new TcpClient();
+                            var result = client.BeginConnect(ip, port, null, null);
+                            var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(0.5));
+                            if (!success)
                             {
                                 proxyServer = "";
                             }
@@ -129,21 +130,20 @@ namespace TelefonskiImenik.Forms
             }
         }
 
-        private string getProxyServerFromExistingListFromWeb()
+        private void getProxyServerFromExistingListFromWeb()
         {
-            string proxyServer = "";
+            proxyIP = "";
             if (_proxyServerListFromWeb != null && _proxyServerListFromWeb.Count != 0)
             {
-                proxyServer = _proxyServerListFromWeb[0].ToString();
+                proxyIP = _proxyServerListFromWeb[0].ToString();
                 _proxyServerListFromWeb.RemoveAt(0);
             }
             else
             {
                 fillProxyServerDirectlyFromWebFreeProxy(getUserAgent());
-                proxyServer = _proxyServerListFromWeb[0].ToString();
+                proxyIP = _proxyServerListFromWeb[0].ToString();
                 _proxyServerListFromWeb.RemoveAt(0);
             }
-            return proxyServer;
         }
 
         #endregion
@@ -346,74 +346,135 @@ namespace TelefonskiImenik.Forms
             }
         }
 
-        private string provjeriMogucPrijenosBroja(int id_Telefon, string predBroj, string brojTelefona)
-        {
-            string rezultatProvjere = "";
-            return rezultatProvjere;
-        }
-
-        private string provjeriPrijenosBroja(int id_Telefon, string predBroj, string brojTelefona )
+        private string provjeriPrijenosBrojaWithProxyServers(int id_Telefon, string predBroj, string brojTelefona, out string linkForCheckUP, out string operater, out string statusBroja)
         {
             string result = "";
+            operater = "";
+            statusBroja = "";
+            linkForCheckUP = "";
+            bool getNewProxyIP = false;
+            int count = 0;
 
-            //string link = "https://www.hakom.hr/operatorSWC.aspx?brojTel=3859161212377&lng=hr&android=yes";
-            //HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
-            //request.Method = "GET";
-            //request.ReadWriteTimeout =  5000;//200000;
-            //HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
-            //request.CachePolicy = noCachePolicy;
-            //request.UserAgent = getUserAgent();
-
-
-            //WebProxy wp = new WebProxy(getProxyServerFromExistingListFromWeb());
-            //wp.BypassProxyOnLocal = true;
-            //request.Timeout = 5000;
-            //request.Proxy = wp;
-            //request.KeepAlive = false;
-            //request.ProtocolVersion = HttpVersion.Version10;
-            //request.AllowWriteStreamBuffering = false;
-
-            //string responseFromServer = "";
-            //HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            //var buffer = new byte[180000];
-            //using (Stream sm = response.GetResponseStream())
-            //{
-            //    int totalBytesRead = 0;
-            //    int bytesRead;
-            //    do
-            //    {
-            //        if (sm.CanRead)
-            //        {
-            //            bytesRead = sm.Read(buffer, totalBytesRead, 180000 - totalBytesRead);
-            //            totalBytesRead += bytesRead;
-            //        }
-            //        else
-            //        {
-            //            bytesRead = 0;
-            //        }
-            //    } while (bytesRead != 0);
-            //    request.Abort();
-            //}
-            //responseFromServer = Encoding.Default.GetString(buffer);
-            //buffer = null;
-            //if (!string.IsNullOrEmpty(responseFromServer))
-            //{
-            //    cTelefon.SnimiUpitOdgovorRegistarNeZovi(id_Telefon, postData, provjera, 1);
-            //}
-            //string s = "<DATA><OPERATOR> A1 HRVATSKA POKRETNI </OPERATOR><BROJ>3859161212377</BROJ><STATUS> Broj nije u postupku prijenosa</STATUS></DATA>";
-            //string operater = "";
-            //string statusBroja = "";
-            //if (s.StartsWith("<DATA>"))
-            //{
-            //    if (s.Contains("<OPERATOR>"))
-            //    {
-            //        operater = s.Substring(s.IndexOf("<OPERATOR>"), s.IndexOf("</OPERATOR>") - 16);
-            //        statusBroja = s.Substring(s.IndexOf(< STATUS > ) )
-            //    }
-            //}
-
+            result = provjeriPrijenosBroja(id_Telefon, predBroj, brojTelefona, out linkForCheckUP, out operater, out statusBroja, out getNewProxyIP);
+            while (getNewProxyIP == true && count <= 10)
+            {
+                getProxyServerFromExistingListFromWeb();
+                result = provjeriPrijenosBroja(id_Telefon, predBroj, brojTelefona, out linkForCheckUP, out operater, out statusBroja, out getNewProxyIP);
+                count++;
+            }
             return result;
         }
+
+        private string provjeriPrijenosBroja(int id_Telefon, string predBroj, string brojTelefona, out string linkForCheckUP, out string operater, out string statusBroja, out bool getNewProxyIP )
+        {
+            string result = "";
+            operater = "";
+            statusBroja = "";
+            getNewProxyIP = false;
+            linkForCheckUP = "";
+            try
+            {
+                //string link = "https://www.hakom.hr/operatorSWC.aspx?brojTel=3859161212377&lng=hr&android=yes";
+                string link = Program._HAKOM_PrijenosBrojaLink + "?brojTel=385" + predBroj.Substring(1, 2) + brojTelefona + "&lng=hr&android=yes";
+                linkForCheckUP = link;
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
+                request.Method = "GET";
+                request.Timeout = 5000;
+                request.ReadWriteTimeout = 5000;
+                request.UserAgent = getUserAgent();
+                request.KeepAlive = false;
+                request.AllowWriteStreamBuffering = false;
+                HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
+                request.CachePolicy = noCachePolicy;
+                
+                if (!string.IsNullOrEmpty(proxyIP))
+                {
+                    string[] proxyIPData = proxyIP.Split(':');
+                    if (proxyIPData != null && proxyIPData.Length == 2)
+                    {
+                        if (chkUseProxy.Checked)
+                        {
+                            WebProxy wp = new WebProxy(proxyIPData[0].ToString(), Convert.ToInt32(proxyIPData[1]));
+                            wp.BypassProxyOnLocal = true;
+                            request.Proxy = wp;
+                        }
+
+                        string responseFromServer = "";
+                        HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                        var buffer = new byte[180000];
+                        using (Stream sm = response.GetResponseStream())
+                        {
+                            int totalBytesRead = 0;
+                            int bytesRead;
+                            do
+                            {
+                                if (sm.CanRead)
+                                {
+                                    bytesRead = sm.Read(buffer, totalBytesRead, 180000 - totalBytesRead);
+                                    totalBytesRead += bytesRead;
+                                }
+                                else
+                                {
+                                    bytesRead = 0;
+                                }
+                            } while (bytesRead != 0);
+                            request.Abort();
+                        }
+                        responseFromServer = Encoding.Default.GetString(buffer);
+                        buffer = null;
+
+                        if (!string.IsNullOrEmpty(responseFromServer))
+                        {
+                            string[] data = responseFromServer.Split('\n');
+                            if (data != null && data.Length >= 5)
+                            {
+                                operater = data[2].Replace("<OPERATOR>", "").Replace("</OPERATOR>", "").Trim();
+                                statusBroja = data[4].Replace("<STATUS>", "").Replace("</STATUS>", "").Trim();
+                            }
+                        }
+                        if (chkHAKOMProvjeraPrijenosaUBazuRezultat.Checked)
+                        {
+                            cTelefon.SnimiUpitOdgovorRegistarNeZovi(id_Telefon, link, responseFromServer, 1, operater, statusBroja);
+                        }
+                    }
+                    else
+                    {
+                        result = "INVALID proxyIPData!";
+                        getNewProxyIP = true;
+                    }
+                }
+                else
+                {
+                    result = "INVALID proxyIPData!";
+                    getNewProxyIP = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                if
+                 (
+                       ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time")
+                    || ex.Message.ToString().Contains("The operation was canceled")
+                    || ex.Message.ToString().Contains("The operation has timed out")
+                    || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it")
+                    || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host")
+                    || ex.Message.ToString().Contains("The remote server returned an error: (403) Forbidden")
+                    || ex.Message.ToString().Contains("An error occurred while sending the request")
+                    || ex.Message.ToString().Contains("The server returned an invalid or unrecognized response")
+                    || ex.Message.ToString().Contains("Connection refused")
+                    || ex.Message.ToString().Contains("Connection reset by peer")
+                    || ex.Message.ToString().Contains("Unable to read data from the transport connection")
+                    || ex.Message.ToString().Contains("An error occurred while sending the request")
+                    || ex.Message.ToString().Contains("The underlying connection was closed")
+                 )
+                {
+                    getNewProxyIP = true;
+                }
+            }
+            return result;
+        }
+
+        #region OLD
 
         /*
         private string provjeriRegistarNeZovi( int id_Telefon, string predBroj, string brojTelefona)
@@ -476,10 +537,13 @@ namespace TelefonskiImenik.Forms
             return provjera;
         }
         */
+
+        #endregion
         private void btnExport_Click(object sender, EventArgs e)
         {
 
-            if( (chkHAKOMProvjeraPrijenosa.Checked || (chkHAKOMProvjeraPrijenosa.Checked == false &&  MessageBox.Show("Export podataka bez provjere mogućnosti prijenosa broja --> Nastaviti ?", "Export podataka", MessageBoxButtons.YesNo ) == DialogResult.Yes)))
+            this.UseWaitCursor = true;
+            if ( (chkHAKOMProvjeraPrijenosa.Checked || (chkHAKOMProvjeraPrijenosa.Checked == false &&  MessageBox.Show("Export podataka bez provjere mogućnosti prijenosa broja --> Nastaviti ?", "Export podataka", MessageBoxButtons.YesNo ) == DialogResult.Yes)))
             {
                 btnPretrazi.Enabled = false;
                 groupBox3.Enabled = false;
@@ -492,15 +556,19 @@ namespace TelefonskiImenik.Forms
                     }
                     else
                     {
-                        this.Cursor = Cursors.WaitCursor;
                         for (int i = 0; i < tblSearchResults.Rows.Count; i++)
                         {
                             if (chkHAKOMProvjeraPrijenosa.Checked)
                             {
-                                string result = "";// provjeriRegistarNeZovi(Convert.ToInt32(tblSearchResults.Rows[i]["id_Telefon"]), tblSearchResults.Rows[i]["predBroj"].ToString(), tblSearchResults.Rows[i]["broj"].ToString());
+                                string linkForCheckUP = "";
+                                string operater = "";
+                                string statusBroja = "";
+                                string result = provjeriPrijenosBrojaWithProxyServers(Convert.ToInt32(tblSearchResults.Rows[i]["id_Telefon"]), tblSearchResults.Rows[i]["predBroj"].ToString(), tblSearchResults.Rows[i]["broj"].ToString(), out linkForCheckUP, out operater, out statusBroja );
                                 tblSearchResults.Rows[i]["RegistarNeZovi"] = result;
+                                tblSearchResults.Rows[i]["RegistarPrijenosBroja"] = statusBroja;
+                                tblSearchResults.Rows[i]["RegistarOperater"] = operater;
                             }
-                            int waitMS = 1000;
+                            int waitMS = 100;
                             if (!string.IsNullOrEmpty(tbRazmakMS.Text))
                             {
                                 Int32.TryParse(tbRazmakMS.Text, out waitMS);
@@ -522,6 +590,7 @@ namespace TelefonskiImenik.Forms
                 }
                 catch (Exception ex)
                 {
+                  
                     string exDescription = "";
                     exDescription += Environment.NewLine + "-------------------------------------------------------------------";
                     exDescription += Environment.NewLine + "-------------------------------------------------------------------";
@@ -541,14 +610,15 @@ namespace TelefonskiImenik.Forms
                     exDescription += Environment.NewLine + "-------------------------------------------------------------------";
 
                     MessageBox.Show(exDescription);
-                    rtbResponse.Text = exDescription;   
+                    rtbResponse.Text = exDescription;
+                  
                 }
                 finally
                 {
                     btnPretrazi.Enabled = true;
                     groupBox3.Enabled = true;
                     groupBox4.Enabled = true;
-                    this.Cursor = Cursors.Default;
+                    this.UseWaitCursor = false;
                 }
             }
         }
@@ -598,11 +668,7 @@ namespace TelefonskiImenik.Forms
             }
         }
 
-        private void chkCheckNeZoviRegistar_CheckedChanged(object sender, EventArgs e)
-        {
-            //chkCheckNeZoviRegistarSnimiUBazuRezultat.Checked = chkCheckNeZoviRegistar.Checked;
-        }
-
+   
         private void button1_Click(object sender, EventArgs e)
         {
             //string link = "https://www.hakom.hr/operatorSWC.aspx?brojTel=3859161212377&lng=hr&android=yes";
@@ -650,14 +716,19 @@ namespace TelefonskiImenik.Forms
             //    cTelefon.SnimiUpitOdgovorRegistarNeZovi(id_Telefon, postData, provjera, 1);
             //}
 
-    //        < DATA >
+            //< DATA >< OPERATOR > A1 HRVATSKA â€“ POKRETNI </ OPERATOR < BROJ > 3859161212377 </ BROJ >
+            //< STATUS > Broj nije u postupku prijenosa</ STATUS >
+            //</ DATA >
+            //string responseFromServer = 
+            //if (responseFromServer.StartsWith("<DATA>"))
+            //{
+            //    if (responseFromServer.Contains("<OPERATOR>"))
+            //    {
+            //        operater = responseFromServer.Substring(s.IndexOf("<OPERATOR>"), responseFromServer.IndexOf("</OPERATOR>") - 16);
+            //        // statusBroja = responseFromServer.Substring(responseFromServer.IndexOf(< STATUS > ))
+            //    }
+            //}
 
-    //< OPERATOR > A1 HRVATSKA â€“ POKRETNI </ OPERATOR >
-   
-    //   < BROJ > 3859161212377 </ BROJ >
-   
-    //   < STATUS > Broj nije u postupku prijenosa</ STATUS >
-    //  </ DATA >
 
         }
     }

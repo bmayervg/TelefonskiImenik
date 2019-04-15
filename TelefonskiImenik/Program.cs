@@ -11,6 +11,7 @@ namespace TelefonskiImenik
     {
         public static string _connectionString;
         public static string _userAgentListFilePath;
+        public static string _HAKOM_PrijenosBrojaLink;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -20,12 +21,18 @@ namespace TelefonskiImenik
             
             _connectionString = ConfigurationManager.AppSettings["connectionString"];
             _userAgentListFilePath = ConfigurationManager.AppSettings["userAgentList"];
+            _HAKOM_PrijenosBrojaLink = ConfigurationManager.AppSettings["hakomPrijenosBrojaLink"];
             if (string.IsNullOrEmpty(_connectionString))
             {
                 MessageBox.Show("connectionString NOT INITIALIZED -> app.config!");
                 Application.Exit();
             }
             else if (string.IsNullOrEmpty(_userAgentListFilePath))
+            {
+                MessageBox.Show("userAgentList NOT INITIALIZED -> app.config!");
+                Application.Exit();
+            }
+            else if (string.IsNullOrEmpty(_HAKOM_PrijenosBrojaLink))
             {
                 MessageBox.Show("userAgentList NOT INITIALIZED -> app.config!");
                 Application.Exit();

@@ -111,7 +111,14 @@ namespace TelImenikWebScraper.Classess
                         {
                             try
                             {
-                                TcpClient client = new TcpClient(ip, port);
+                                
+                                var client = new TcpClient();
+                                var result = client.BeginConnect(ip, port, null, null);
+                                var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(3));
+                                if (!success)
+                                {
+                                    _proxyServerList.Remove(_proxyServerList[i].ToString());
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -544,16 +551,28 @@ namespace TelImenikWebScraper.Classess
                 request.UserAgent = userAgent;
             }
 
-            if (!string.IsNullOrEmpty(proxyIP) )
+            if (!string.IsNullOrEmpty(proxyIP))
             {
-                WebProxy wp = new WebProxy(proxyIP);
-                wp.BypassProxyOnLocal = false;
-                request.Timeout = requestTimeOut;
-                request.Proxy = wp;
-                request.KeepAlive = false;
-                request.Timeout = System.Threading.Timeout.Infinite;
-                request.ProtocolVersion = HttpVersion.Version10;
-                request.AllowWriteStreamBuffering = false;
+                string[] proxyIPData = proxyIP.Split(':');
+                if (proxyIPData != null && proxyIPData.Length == 2)
+                {
+                    WebProxy wp = new WebProxy(proxyIPData[0].ToString(), Convert.ToInt32(proxyIPData[1]));
+                    wp.BypassProxyOnLocal = false;
+                    request.Timeout = requestTimeOut;
+                    request.Proxy = wp;
+                    request.KeepAlive = false;
+                    request.Timeout = System.Threading.Timeout.Infinite;
+                    request.ProtocolVersion = HttpVersion.Version10;
+                    request.AllowWriteStreamBuffering = false;
+                }
+                else
+                {
+                    throw new Exception("PROXY IP EMPTY");
+                }
+            }
+            else
+            {
+                throw new Exception("PROXY IP EMPTY");
             }
 
             CookieContainer cc = new CookieContainer();
@@ -733,15 +752,26 @@ namespace TelImenikWebScraper.Classess
 
             if (!string.IsNullOrEmpty(proxyIP))
             {
-                WebProxy wp = new WebProxy(proxyIP);
-                wp.BypassProxyOnLocal = false;
-                request.Timeout = requestTimeout;
-                request.Proxy = wp;
-                request.Timeout = requestTimeout + 5000;//System.Threading.Timeout.Infinite;
-                request.ProtocolVersion = HttpVersion.Version10;
-                request.AllowWriteStreamBuffering = false;
+                string[] proxyIPData = proxyIP.Split(':');
+                if (proxyIPData != null && proxyIPData.Length == 2)
+                {
+                    WebProxy wp = new WebProxy(proxyIPData[0].ToString(), Convert.ToInt32(proxyIPData[1]));
+                    wp.BypassProxyOnLocal = false;
+                    request.Timeout = requestTimeout;
+                    request.Proxy = wp;
+                    request.Timeout = requestTimeout + 5000;//System.Threading.Timeout.Infinite;
+                    request.ProtocolVersion = HttpVersion.Version10;
+                    request.AllowWriteStreamBuffering = false;
+                }
+                else
+                {
+                    throw new Exception("PROXY IP EMPTY!");
+                }
             }
-
+            else
+            {
+                throw new Exception( "PROXY IP EMPTY!");
+            }
             CookieContainer cc = new CookieContainer();
             request.CookieContainer = cc;
             for (int i = 0; i < cookies.Count; i++)
@@ -814,15 +844,22 @@ namespace TelImenikWebScraper.Classess
             while
             (
                 (
-                        responseFromServer.Contains("Odmori malo, zaslužio si...")
+                       responseFromServer.Contains("Odmori malo, zaslužio si...")
                     || responseFromServer.Contains("A connection attempt failed because the connected party did not properly respond after a period of time") 
-                    || responseFromServer.Contains("The operation was canceled.") 
-                    || responseFromServer.Contains("The operation has timed out.") 
+                    || responseFromServer.Contains("The operation was canceled") 
+                    || responseFromServer.Contains("The operation has timed out") 
                     || responseFromServer.Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") 
                     || responseFromServer.Contains("An existing connection was forcibly closed by the remote host") 
                     || responseFromServer.Contains("The remote server returned an error: (403) Forbidden")
+                    || responseFromServer.Contains("An error occurred while sending the request")
+                    || responseFromServer.Contains("The server returned an invalid or unrecognized response")
+                    || responseFromServer.Contains("Connection reset by peer")
+                    || responseFromServer.Contains("Connection refused")
+                    || responseFromServer.Contains("Unable to read data from the transport connection")
+                    || responseFromServer.Contains("An error occurred while sending the request.")
+                    || responseFromServer.Contains("An error occurred while sending the request")
+                    || responseFromServer.Contains("The underlying connection was closed")
                     || responseFromServer == ""
-                    || string.IsNullOrEmpty( responseFromServer )
                 )
                 && counter <=30
             )
@@ -1032,7 +1069,7 @@ namespace TelImenikWebScraper.Classess
                 HtmlNodeCollection nodes = new HtmlNodeCollection(null);
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(link);
                 request.Method = "GET";
-                request.ReadWriteTimeout = requestTimeout + 5000;//200000;
+                request.ReadWriteTimeout = requestTimeout + 5000;
                 HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
                 request.CachePolicy = noCachePolicy;
                 if (string.IsNullOrEmpty(userAgent))
@@ -1045,13 +1082,25 @@ namespace TelImenikWebScraper.Classess
                 }
                 if (!string.IsNullOrEmpty(proxyIP))
                 {
-                    WebProxy wp = new WebProxy(proxyIP);
-                    wp.BypassProxyOnLocal = true;
-                    request.Timeout = requestTimeout + 5000;
-                    request.Proxy = wp;
-                    request.KeepAlive = false;
-                    request.ProtocolVersion = HttpVersion.Version10;
-                    request.AllowWriteStreamBuffering = false;
+                    string[] proxyIPData = proxyIP.Split(':');
+                    if (proxyIPData != null && proxyIPData.Length == 2)
+                    {
+                        WebProxy wp = new WebProxy(proxyIPData[0].ToString(), Convert.ToInt32(proxyIPData[1]));
+                        wp.BypassProxyOnLocal = true;
+                        request.Timeout = requestTimeout + 5000;
+                        request.Proxy = wp;
+                        request.KeepAlive = false;
+                        request.ProtocolVersion = HttpVersion.Version10;
+                        request.AllowWriteStreamBuffering = false;
+                    }
+                    else
+                    {
+                        throw new Exception("proxy IP EMPTY!");
+                    }
+                }
+                else
+                {
+                    throw new Exception("proxy IP EMPTY!");
                 }
                 CookieContainer cc = new CookieContainer();
                 request.CookieContainer = cc;
@@ -1163,12 +1212,18 @@ namespace TelImenikWebScraper.Classess
                 if 
                 (
                        ex.Message.ToString().Contains("A connection attempt failed because the connected party did not properly respond after a period of time") 
-                    || ex.Message.ToString().Contains("The operation was canceled.") 
-                    || ex.Message.ToString().Contains("The operation has timed out.") 
+                    || ex.Message.ToString().Contains("The operation was canceled") 
+                    || ex.Message.ToString().Contains("The operation has timed out") 
                     || ex.Message.ToString().Contains("No connection could be made because the target machine actively refused it No connection could be made because the target machine actively refused it") 
                     || ex.Message.ToString().Contains("An existing connection was forcibly closed by the remote host") 
                     || ex.Message.ToString().Contains("The remote server returned an error: (403) Forbidden")
-                    || ex.Message.ToString().Contains("An error occurred while sending the request. The server returned an invalid or unrecognized response")
+                    || ex.Message.ToString().Contains("An error occurred while sending the request")
+                    || ex.Message.ToString().Contains("The server returned an invalid or unrecognized response")
+                    || ex.Message.ToString().Contains("Connection refused")
+                    || ex.Message.ToString().Contains("Connection reset by peer")
+                    || ex.Message.ToString().Contains("Unable to read data from the transport connection")
+                    || ex.Message.ToString().Contains("An error occurred while sending the request")
+                    || ex.Message.ToString().Contains("The underlying connection was closed")
                 )
                 {
                     log = "IMENIK HR --> private Tuple<CookieCollection, HtmlNodeCollection> GetUsersForUlicaMjesto(string link) --> responseFromServer PROXY EXCEPTION --> link" + link + Environment.NewLine + ex.Message.ToString();
